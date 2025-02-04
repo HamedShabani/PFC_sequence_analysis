@@ -1150,7 +1150,34 @@ def find_condition(input_nums,condition_dict):
 
     return side_center_mapping[result[0]]
 
- 
+
+
+
+
+def plot_samples2(templates,isort,samples,ax,fac=1,nc=-1):
+    cmap=plt.get_cmap('Set3')
+    ncells=len(templates[list(templates.keys())[0]])
+    linsp=np.arange(1,ncells+1)
+
+    nshift=0
+    for tmpl in templates.values():
+        #print(templates, tmpl)
+        if nc==-1:
+            ax.plot(nshift+tmpl[isort]*fac, linsp, '.r') 
+        else:
+            colrgb=np.array(cmap.colors[np.mod(nc,12)]).reshape(1,3)
+            ax.plot(nshift+tmpl[isort]*fac, linsp, '.', color=colrgb) 
+        nshift += .21
+        
+    for nsmpl in range(len(samples)):
+        ax.plot(nshift+samples[nsmpl][isort]*fac,linsp, '.k')
+        nshift +=.21
+        
+    ax.set_xlabel('Seq. #')
+    ax.set_ylabel('Sort seq#')
+
+    
+
 
 
 

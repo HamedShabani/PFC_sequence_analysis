@@ -1150,7 +1150,12 @@ def find_condition(input_nums,condition_dict):
 
     return side_center_mapping[result[0]]
 
- 
+
+
+
+
+    
+
 
 
 

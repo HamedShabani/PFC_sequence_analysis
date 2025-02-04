@@ -333,6 +333,150 @@ def popbursts(mat,sig,fs,kwidth=0,minwidth=1):
 
 
 
+def plot_sequences(mat,seq,vec,idpeaks,sig,fs,speed_trl,poprate):
+    #poprate=np.sum(mat,axis=0)
+    thresh=np.mean(poprate)+sig*np.std(poprate)
+    import seaborn as sns
+    if 1:
+        sorted=True
+        Plot_entrire_recording=True
+        sequencnmbr=0
+        
+        if Plot_entrire_recording:
+           dta=mat
+           colors='k' 
+           linewidth=1 
+           fsize=18    
+        # elif sorted==True:
+        #     dta = vec[sequencnmbr][seq[sequencnmbr]]
+        #     colors='r'
+        #     ttitle='sorted'
+        #     linewidth=3  
+        #     fsize=20  
+        # else:
+        #     dta= vec[sequencnmbr]
+        #     colors='b'
+        #     ttitle='unsorted'
+        #     linewidth=3   
+        #     fsize=20 
+        
+
+
+        #khers=[(x-np.min(x))/(np.max(x)-np.min(x)) for i, x in enumerate(dta) if np.nansum(x)!=0]
+        khers=[(x-np.min(x))/(np.max(x)-np.min(x)) for i, x in enumerate(dta) ]
+        khers=np.nan_to_num(khers, copy=True, nan=0.0)
+
+        #clidx=[i for i, x in enumerate(dta) if np.nansum(x)!=0]
+        clidx=[i for i, x in enumerate(dta) ]
+
+        ticks = np.linspace(0,np.shape(khers)[1]-1,5)
+       
+        ticklabels = ["{:0.0f}".format(i) for i in ticks/fs]
+
+        palette = sns.color_palette("hls", np.shape(khers)[-1])
+        with plt.rc_context({'font.size': fsize}):
+            fig=plt.figure(figsize=(30,10))
+            if Plot_entrire_recording:
+                ax0=fig.add_axes([0.1,0.1,0.4,.7])
+
+                ax=fig.add_axes([0.1,.8,0.4,.1])
+                ax.vlines(idpeaks,ymin=-1,ymax=max(poprate+10),linewidth=1,color='k',alpha=.8)
+                ax.vlines(idpeaks,ymin=0,ymax=max(poprate+10),linewidth=10,color='g',alpha=.3)
+                ax.plot(poprate,linewidth=5)
+                ax.hlines(thresh,xmin=0,xmax=len(poprate),color='r',linestyles= 'dashed')
+                ax.set_xlim([0,len(poprate)])
+                ax.set_ylabel('ΔF/F0')
+                #ax.set_title('Detected bursts of active cells')
+                ax.set_title('Detected bursts')
+
+                ax.set_xticks([])
+                ax.set_yticks([])
+
+
+                ax0.set_ylim(0,len(clidx))
+                ax0.set_xlim([0,len(poprate)])
+
+                # ax3=fig.add_axes([0.1,.9,0.4,.1])
+                # ax3.plot(speed_trl,linewidth=4,color='green')
+                # plt.xlim([0,len(poprate)])
+                # ax3.set_ylabel('Speed Cm/sec')
+
+                ax0.vlines(idpeaks,ymin=0,ymax=len(clidx),linewidth=1,color='k',alpha=.8)
+                ax0.vlines(idpeaks,ymin=0,ymax=len(clidx),linewidth=10,color='g',alpha=.3)
+                i=0
+                for kk,ii in enumerate(khers):
+                    ax0.plot(ii+i,color='k', linewidth=linewidth)
+
+                    i=i+1
+
+
+
+            # if sorted == True:
+            #     plt.yticks(np.arange(len(seq[sequencnmbr])),seq[sequencnmbr])
+            # else:
+            #     plt.yticks(np.arange(len(clidx)),clidx)
+            ax0.set_xticks(ticks,ticklabels)
+
+            ax0.set_xlabel('time s')
+            ax0.set_ylabel('Cell #')
+            #ax2.set_title(ttitle) 
+
+
+
+
+
+
+
+            with plt.rc_context({'font.size': fsize}):
+                fig2=plt.figure(figsize=(5,10))
+                ax1=fig2.add_axes([0.1,0.1,0.4,.7])
+                ax2=fig2.add_axes([0.65,0.1,0.4,.7])
+
+                dta = vec[sequencnmbr][seq[sequencnmbr]]
+                colors='r'
+                ttitle='sorted'
+                linewidth=3  
+                fsize=20  
+                khers=[(x-np.min(x))/(np.max(x)-np.min(x)) for i, x in enumerate(dta) if np.nansum(x)!=0]
+                clidx=[i for i, x in enumerate(dta) if np.nansum(x)!=0]
+
+                i=0
+                for kk,ii in enumerate(khers):
+                        ax2.plot(ii+i,color=colors, linewidth=linewidth)
+                        i=i+1
+
+                ax2.set_title(ttitle)
+                ax2.set_yticks(np.arange(len(seq[sequencnmbr])),seq[sequencnmbr])
+
+
+
+                dta= vec[sequencnmbr]
+                colors='b'
+                ttitle='unsorted'
+                khers=[(x-np.min(x))/(np.max(x)-np.min(x)) for i, x in enumerate(dta) if np.nansum(x)!=0]
+                clidx=[i for i, x in enumerate(dta) if np.nansum(x)!=0]
+                i=0
+                for kk,ii in enumerate(khers):
+                        ax1.plot(ii+i,color=colors, linewidth=linewidth)
+                        i=i+1
+
+                ax1.set_title(ttitle)
+                ax1.set_yticks(np.arange(len(seq[sequencnmbr])),np.sort(seq[sequencnmbr]))
+                
+                ticks = np.linspace(0,np.shape(khers)[1]-1,3)
+                ticklabels = ["{:0.2f}".format(i) for i in ticks/fs]
+                ax1.set_xticks(ticks,ticklabels,fontsize=14)
+                ax1.set_xlabel('time s')
+                ax1.set_ylabel('Cell index')
+
+                ax2.set_xticks(ticks,ticklabels,fontsize=14)
+                ax2.set_xlabel('time s')
+                #ax2.set_ylabel('Cell #')
+                #plt.yticks(np.arange(len(seq[sequencnmbr])),seq[sequencnmbr])
+                #plt.xticks(np.arange(0,len(poprate),50),np.arange(0,len(poprate),50)/fs)
+                
+            
+
 
 
 def average_sequence(burst_set):
@@ -1010,18 +1154,34 @@ def apply_masks(sess_info,Masks,cond_numbers,cond_name,sessin_numbers,odd_even,s
         for cond_nbr in cond_numbers:
             mask_cond_cell[celid] += np.asarray(Masks['cell_cond'][celid])==cond_nbr
 
+
+
+
     # cond_number=cond_number1 # 'outward_L_side'
     # mask_cond_burst_side= np.asarray(Masks['bursts_cond'])==cond_number
     # mask_cond_cell_side= np.asarray(Masks['cell_cond'][celid])==cond_number
+
     # mask_cond_t_side= np.asarray(Masks['conditions'])==cond_number
     # mask_cond_fr= np.asarray(Masks['fr_cond'])==cond_number
+
+
+
+
     mask_correct_fr= np.asarray(Masks['correct_failed_fr'])==trial_type
+
+
+
     # conndname1=list(cond_names.keys())[cond_number]
+
+
+
     # cond_number=cond_number2 # 'outward_L_center'
     # mask_cond_burst_center= np.asarray(Masks['bursts_cond'])==cond_number
     # mask_cond_cell_center= np.asarray(Masks['cell_cond'][celid])==cond_number
+
     # mask_cond_t_center= np.asarray(Masks['conditions'])==cond_number
     # conndname2=list(cond_names.keys())[cond_number]
+
 
     mask_cond_burst= mask_cond_burst_side
     #mask_cond_cell= mask_cond_cell_side
@@ -1033,10 +1193,15 @@ def apply_masks(sess_info,Masks,cond_numbers,cond_name,sessin_numbers,odd_even,s
     run_data['seqs']=np.asarray(sess_info['seqs'])[mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']]
     run_data['bursts']=np.asarray(sess_info['bursts'])[mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']]
 
+
+
     #run_data['idpeaks_cells']=np.asarray(sess_info['Spike_times_cells'][celid])[mask_sess_cell & mask_cond_cell & mask_phase_cell]
 
     for celid in range(len(sess_info['Spike_times_cells'])):
         run_data['idpeaks_cells'][celid] = np.asarray(sess_info['Spike_times_cells'][celid])[mask_sess_cell[celid] & mask_cond_cell[celid] & mask_phase_cell[celid]]
+
+
+
 
    
     run_data['trial_idx_mask']=np.asarray(sess_info['trial_idx_mask'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
@@ -1046,7 +1211,9 @@ def apply_masks(sess_info,Masks,cond_numbers,cond_name,sessin_numbers,odd_even,s
     cell_trace_sess1=np.asarray(sess_info['extract'][celid])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']] 
 
     run_data['trace_cells']=np.asarray([x[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']] for x in sess_info['extract']])# raw trace of all cells
+
     run_data['lin_pos']=np.asarray(sess_info['lin_pos'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
+
     run_data['conditions']=np.asarray(Masks['conditions'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
 
 
@@ -1054,7 +1221,9 @@ def apply_masks(sess_info,Masks,cond_numbers,cond_name,sessin_numbers,odd_even,s
     run_data['y_loc']=np.asarray(sess_info['loc']['y'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase]
     run_data['speed']=np.asarray(sess_info['speed'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase]
 
- 
+    
+
+
     run_data['fr']=np.asarray(sess_info['fr'])[mask_sess_fr & mask_cond_fr &  mask_correct_fr & mask_phase_fr]
 
     t_all=np.asarray(sess_info['t'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase ]
@@ -1097,6 +1266,8 @@ def find_diffs(seq_rate_failed,pairs):
 
         diff_rate[pr]=diff_rt
     return diff_rate
+
+
 
 
         
@@ -1150,7 +1321,172 @@ def find_condition(input_nums,condition_dict):
 
     return side_center_mapping[result[0]]
 
- 
+
+
+
+
+def plot_samples2(templates,isort,samples,ax,fac=1,nc=-1):
+    cmap=plt.get_cmap('Set3')
+    ncells=len(templates[list(templates.keys())[0]])
+    linsp=np.arange(1,ncells+1)
+
+    nshift=0
+    for tmpl in templates.values():
+        #print(templates, tmpl)
+        if nc==-1:
+            ax.plot(nshift+tmpl[isort]*fac, linsp, '.r') 
+        else:
+            colrgb=np.array(cmap.colors[np.mod(nc,12)]).reshape(1,3)
+            ax.plot(nshift+tmpl[isort]*fac, linsp, '.', color=colrgb) 
+        nshift += .21
+        
+    for nsmpl in range(len(samples)):
+        ax.plot(nshift+samples[nsmpl][isort]*fac,linsp, '.k')
+        nshift +=.21
+        
+    ax.set_xlabel('Seq. #')
+    ax.set_ylabel('Sort seq#')
+
+    
+
+
+
+
+
+def subsampling_perms(labindices,traintarget): 
+
+    """
+    subsampling_perms
+    ______________________
+    
+    This is a function that shuffles the data indices so that 
+    different parts of the dataset are represented within each
+    subsampling.
+    
+    Input:  
+            - a list holding the indices of the specific label.
+    
+            - an integer equal to the amount of patterns needed.                  
+            
+    Output: 
+            - an array holding the indices for the test set.
+    
+            - an array holding the indices for the train set.
+              
+    """    
+    train_perms = []
+    test_perms = []
+    # Get the first permutation
+    lperm_i = list(np.random.permutation(labindices)) 
+    train_perms = lperm_i[0:traintarget]
+    test_perms = lperm_i[traintarget:]  
+
+    return train_perms, test_perms
+def train_test_model(x_dt,y_lb,subsamplings):
+
+    """
+    train_test_model
+    ______________________
+    
+    This is a function that decodes the data using the model of choise
+    A 2-fold subsampling procedure is implemented.
+    The label representation/contribution is kept within each fold.
+    
+    Input:  
+            - a numpy array holding the dataset. 
+            - a numpy array holding the labels.
+            - an integer equal to the dataset dimensionality.
+            - the learning rate and the amount of epochs for the model.
+            - an integer value equal to the amount of subsamplings requested.
+            - the type of model requested.
+            
+            Note : an easily additional input could be the option to have
+            ballanced label contribution  within subsamplings.
+            Uppon request I can implement that. 
+            
+    Output: 
+            - a list holding two arrays one with the mean ccr values 
+              of all subsamplings and one holding a ccr value for 
+              each pattern calculated over the subsampling process.               
+                  
+    """
+    
+    # Get the indices per label and their contribution % in train test sets
+    label0_indices = [ind for ind,x in enumerate(y_lb) if x==0]
+    label1_indices = [ind for ind,x in enumerate(y_lb) if x==1]    
+    # Get the size of the training and testing sets
+    train_size = int(np.ceil(x_dt.shape[0]*.8))
+    # Get the ratio of each label in the original set
+    label0_ratio = len(label0_indices)/(len(label0_indices)+len(label1_indices))
+    label1_ratio = len(label1_indices)/(len(label0_indices)+len(label1_indices))
+    # Get the target size for each label for the training-testing set
+
+    minlen=np.min((len(label0_indices),len(label1_indices)))
+    label0_train_target = int((minlen)/2)#int(np.ceil(train_size*label0_ratio))
+    label1_train_target = int((minlen)/2)#int(np.ceil(train_size*label1_ratio))
+    
+    # Innitiallize an array that will hold the ccrs
+    ccrs = []
+    # Initiallize two arrays that will hold the ccr per bin
+    correct = np.zeros((subsamplings,x_dt.shape[0]))
+    used    = np.zeros((subsamplings,x_dt.shape[0])) 
+    # Loop over the # subsamplings 
+    for nsub in range(subsamplings):
+        
+        # Generate n distinct permutations of the indices per label to be used in each subsampling
+        train0_perms,test0_perms = subsampling_perms(label0_indices,label0_train_target)
+        train1_perms,test1_perms = subsampling_perms(label1_indices,label1_train_target)
+        # Unite the indices from each label
+        #ind_train = train0_perms + train1_perms
+        #ind_test  = test0_perms + test1_perms      
+        ind_train = train0_perms[:label0_train_target] + train1_perms [:label0_train_target] 
+        ind_test  = test0_perms[:label0_train_target] + test1_perms[:label0_train_target] 
+        # Pick the data needed for the subsampling
+        y_train = np.copy(y_lb[ind_train])
+        y_test  = np.copy(y_lb[ind_test])
+        X_train = np.copy(x_dt[ind_train,:])
+        X_test  = np.copy(x_dt[ind_test,:])  
+        
+        if np.sum(X_train)==0:
+                X_train[0]=0.00000001
+              
+        # if len(np.unique(y_train))<2:
+        #     continue  
+        
+        #         continue
+        # if np.sum(np.asarray(X_train)[np.asarray(y_train==0)])==0:
+        #       continue
+        # if np.sum(np.asarray(X_train)[np.asarray(y_train==1)])==0:
+        #       continue
+        # Create an instance of the LDA model
+        lda = LinearDiscriminantAnalysis(solver='lsqr')
+        #print('len labels=',len(np.unique(y_train)),np.sum(X_test))
+        # Fit the model to the training data
+        lda.fit(X_train, y_train)
+
+        # Predict the class labels for the test set
+
+        y_pred = lda.predict(X_test)
+
+        # Calculate the accuracy of the model
+        #accuracy = balanced_accuracy_score(y_test, y_pred)
+        #print("Accuracy: "+cod, accuracy)
+
+        
+        cnt=0
+        ynt=0
+        for iy in range(len(y_pred)):
+                if y_pred[iy]==1 and y_test[iy]==1:    
+                        cnt+=1
+                elif y_pred[iy]==0 and y_test[iy]==0:    
+                        ynt+=1
+        # print('correct',cnt/sum(y_test))
+        # print('failed',ynt)
+
+
+        ccrs.append(np.sum(y_test==y_pred) / len(y_test))
+    return ccrs
+
 
 
 
@@ -1446,6 +1782,43 @@ from scipy.ndimage import gaussian_filter1d
 
 
 
+def calculate_average_dynamic(data):
+    average = {}
+    num_entries = len(data)
+    
+    # Initialize average dictionary
+    for category in ['correct', 'failed']:
+        average[category] = {key: 0 for key in data[0][category]}
+    
+    # Sum up all values
+    for i in range(num_entries):
+        for category in ['correct', 'failed']:
+            for key in data[i][category]:
+                average[category][key] += data[i][category][key]
+    
+    # Calculate average
+    for category in ['correct', 'failed']:
+        for key in average[category]:
+            average[category][key] /= num_entries
+            
+    return average
+
+
+# Function to merge all values of the provided data for any number of repetitions
+def merge_all_values(data):
+    merged = {}
+    
+    # Initialize merged dictionary
+    for category in ['correct', 'failed']:
+        merged[category] = {key: [] for key in data[0][category]}
+    
+    # Merge values
+    for i in data.values():
+        for category in ['correct', 'failed']:
+            for key, value in i[category].items():
+                merged[category][key].append(value)
+            
+    return merged
 
 
 def plot_kl_distributions_ss(js_divergence_ss,p_value_corr_js_,name,type='Correct'):
@@ -1552,6 +1925,60 @@ def get_pval(orignial,shuffled):
 
 
 
+def plot_sequence(temp_info,bmat_temp,zmat_temp):
+    bursts=np.squeeze(temp_info['bursts'])
+    plot_sequence_time=True
+    if plot_sequence_time ==True:
+        templates=[]
+        tsamples=[]
+        dummies=[]
+        for nt in range(len(temp_info['ids_clust'])):
+            clist=(np.where(temp_info['ids_clust']==nt)[0])
+            # if len(np.where(np.array(temp_info['exclude'])==nt)[0])>0:# bad clusers are already removed in template function
+            #     continue
+
+            
+            #clist = temp_info['ids_clust'][nt]
+            #print(nt,len(clist))
+            samples = np.array(bursts)[clist,:,:]
+            dummy,template = average_sequence(samples)
+            templates.append(template/fs)
+            dummies.append(np.mean(samples,axis=0))
+
+            samples=np.array(bursts)[clist,:,:]
+            tsamples.append(t_from_mat(list(samples),fs))
+            
+        fig=plt.figure(figsize=(10,10))
+        dy=0.15        
+        for nt3 in range(len(templates)):
+            #clist = temp_info['ids_clust'][nt3]
+            clist=(np.where(temp_info['ids_clust']==nt3)[0])
+            print(nt3)
+            ax=fig.add_axes([0.1,0.85-nt3*dy,0.8,0.1])
+            #if nt==0:
+                #ax.set_title(filename[:-4])
+            isort=np.argsort(templates[nt3])
+            ncells=len(templates[0])
+            linsp=np.arange(1,ncells+1)
+
+
+            nshift=0
+            for nt2 in range(len(templates)):
+                if bmat_temp[nt3,nt2]:
+                    ax.plot(nshift+templates[nt2][isort], linsp, 'r.')
+                else:
+                    ax.plot(nshift+templates[nt2][isort], linsp, 'b.') 
+                ax.text(nshift,ncells+10,"%.1f" %zmat_temp[nt3,nt2])
+                #ax.text(nshift,ncells+5,"%.f" %bmat_temp[nt3,nt2])
+
+                nshift += 1
+
+
+
+
+
+
+
 
 def plot_seqs(ti,vec,fs):
     # thsi is for plotting
@@ -1633,6 +2060,13 @@ def plot_samples2(templates,isort,samples,seq_nbr,ax,fac=1,nc=-1):
         
     ax.set_xlabel('Seq. #',fontsize=16)
     ax.set_ylabel('Cluster '+str(nc)+' \nSort seq#',fontsize=16)
+
+
+
+
+
+
+
 
 
 

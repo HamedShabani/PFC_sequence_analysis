@@ -1690,6 +1690,105 @@ def significant_pc_to_tc(Rates,Rates_sh,TC_learned,PC_to_Non_PC,animal):
     return significants_L,significants_R,rate_pc_to_nonpc_learned_L,rate_pc_to_nonpc_learned_R,rate_pc_learning_L,rate_pc_learning_R
 
 
+# def significant_pc_to_tc_2(Rates,Rates_sh,TC_learned,PC_learning,PC_learned,animal,y_ax):
+#     # get indices of the cells that are pc in learneg and became tc in learned
+#     epsilon=0
+#     pc_to_tc_learned = TC_learned[PC_learning]# place cells that are TC after learning
+#     pc_to_pc_learned = PC_learned[PC_learning]# place cells that are TC after learning
+
+#     non_si_learned=~(TC_learned | PC_learned)
+
+#     pc_to_nonsi= non_si_learned[PC_learning]# PCs in learning that are niether pc nor tc after learning
+
+#     rate_pc_learning_L=(Rates['learning'][animal]['L'][PC_learning])
+#     rate_pc_learning_R=(Rates['learning'][animal]['R'][PC_learning])
+
+#     rate_pc_learned_L=(Rates['learned'][animal]['L'][PC_learning])
+#     rate_pc_learned_R=(Rates['learned'][animal]['R'][PC_learning])
+
+#     correlation_pc_L=[np.corrcoef(x,y)[0][1] for x,y in zip(rate_pc_learning_L,rate_pc_learned_R)]
+#     correlation_pc_R=[np.corrcoef(x,y)[0][1] for x,y in zip(rate_pc_learning_R,rate_pc_learned_L)]
+
+
+#     shuffle_numbers=len(Rates_sh['learning'][animal]['L'])
+#     correlation_pc_sh_L=[]#np.zeros(shuffle_numbers)
+#     correlation_pc_sh_R=[]
+#     for sh in np.arange(shuffle_numbers):
+#         #rate_sh_pc_learning=(Rates_sh['learning'][animal]['L'][sh][PC_to_Non_PC])
+#         rate_sh_pc_learned_R=(Rates_sh['learned'][animal]['R'][sh][PC_learning])
+#         correlation_pc_sh_L.append([np.corrcoef(x,y+epsilon)[0][1] for x,y in zip(rate_pc_learning_L,rate_sh_pc_learned_R)])
+
+#         rate_sh_pc_learned_L=(Rates_sh['learned'][animal]['L'][sh][PC_learning])
+#         correlation_pc_sh_R.append([np.corrcoef(x,y+epsilon)[0][1] for x,y in zip(rate_pc_learning_R,rate_sh_pc_learned_L)])
+
+    
+#     overlap=500# total shift length
+#     max_corrs, stable_fields_L = compute_max_correlation(rate_pc_learning_L, rate_pc_learned_R, overlap)
+#     max_corrs, stable_fields_R = compute_max_correlation(rate_pc_learning_R, rate_pc_learned_L, overlap)
+#     significants_L=stable_fields_L
+#     significants_R=stable_fields_R
+
+
+
+
+#     # pvals_L = np.sum([np.asarray(correlation_pc_L)>np.asarray(x) for x in correlation_pc_sh_L],axis=0)/shuffle_numbers
+#     # significants_L=pvals_L>.95
+#     # #significants_L = pc_to_tc_learned & significants2# PC cells that are signficantly stable after learning and are TC in learned
+
+#     # pvals_R = np.sum([np.asarray(correlation_pc_R)>np.asarray(x) for x in correlation_pc_sh_R],axis=0)/shuffle_numbers
+#     # significants_R=pvals_R>.95
+#     # #significants_R = pc_to_tc_learned & significants2# PC cells that are signficantly stable  after learning and are TC in learned
+
+#     significant_TC_stbl=(significants_L | significants_R) & pc_to_tc_learned# PC cells that are signficantly stable after learning and are TC in learned
+#     significant_PC_stbl=(significants_L | significants_R) & pc_to_pc_learned# PC cells that are signficantly stable after learning and are PC in learned
+#     significant_nonsi_stbl= pc_to_nonsi# PC cells that are signficantly stable after learning but are not TC or PC in learned
+
+#     TC_unstbl=~(significants_L | significants_R) & pc_to_tc_learned# PC cells that are signficantly stable after learning and are TC in learned
+#     PC_unstbl=~(significants_L | significants_R) & pc_to_pc_learned# PC cells that are signficantly stable after learning and are TC in learned
+
+
+
+#     if 1:
+#         significant_TC_stbl_L=(significants_L ) & pc_to_tc_learned# PC cells that are signficantly stable after learning and are TC in learned
+
+#             # Create figure and axes
+#         fig, (ax, ax2, ax3,ax4) = plt.subplots(1, 4, figsize=(12, 4), gridspec_kw={'width_ratios': [9, 9, 9,9]})
+#         # Get max for normalization
+
+#         sig_sort_idx_e = np.argsort(np.argmax(rate_pc_learning_L[significant_TC_stbl_L], axis=1))
+
+#         max_o_e = np.max([np.max(rate_pc_learning_L[significant_TC_stbl_L][sig_sort_idx_e]), np.max(rate_pc_learned_R[significant_TC_stbl_L][sig_sort_idx_e])])
+
+#         # Plot the rate maps for PC in Learning
+#         im1 = ax.pcolormesh(y_ax, np.arange(np.sum(significant_TC_stbl_L)), rate_pc_learning_L[significant_TC_stbl_L][sig_sort_idx_e] / max_o_e, rasterized=True)
+#         plt.colorbar(im1, ax=ax)
+#         ax.set_title('PC in Learning (Left)', fontsize=18)
+#         ax.set_xlabel('Position [norm]', fontsize=16)
+#         ax.set_ylabel('Cell #', fontsize=16)
+
+#         # Plot the rate maps for PC in Learning
+#         im1 = ax2.pcolormesh(y_ax, np.arange(np.sum(significant_TC_stbl_L)), rate_pc_learning_R[significant_TC_stbl_L][sig_sort_idx_e] / max_o_e, rasterized=True)
+#         plt.colorbar(im1, ax=ax2)
+#         ax2.set_title('PC in Learning (Right)', fontsize=18)
+#         ax2.set_xlabel('Position [norm]', fontsize=16)
+#         ax2.set_ylabel('Cell #', fontsize=16)
+
+#         # Plot the rate maps for PC in Learning
+#         im1 = ax3.pcolormesh(y_ax, np.arange(np.sum(significant_TC_stbl_L)), rate_pc_learned_L[ significant_TC_stbl_L][sig_sort_idx_e] / max_o_e, rasterized=True)
+#         plt.colorbar(im1, ax=ax3)
+#         ax3.set_title('TC in Learned (Left)', fontsize=10)
+#         ax3.set_xlabel('Position [norm]', fontsize=16)
+#         ax3.set_ylabel('Cell #', fontsize=16)
+
+#         # Plot the rate maps for PC in Learning
+#         im4 = ax4.pcolormesh(y_ax, np.arange(np.sum(significant_TC_stbl_L)), rate_pc_learned_R[significant_TC_stbl_L][sig_sort_idx_e] / max_o_e, rasterized=True)
+#         plt.colorbar(im4, ax=ax4)
+#         ax4.set_title('TC in Learned(Right)', fontsize=10)
+#         ax4.set_xlabel('Position [norm]', fontsize=16)
+#         ax4.set_ylabel('Cell #', fontsize=16)
+
+#     return significant_TC_stbl,significant_PC_stbl,TC_unstbl,PC_unstbl,significant_nonsi_stbl
+
 
 
 ########################### Place_code_analysis #######################################

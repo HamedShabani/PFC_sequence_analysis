@@ -1150,7 +1150,68 @@ def find_condition(input_nums,condition_dict):
 
     return side_center_mapping[result[0]]
 
- 
+
+
+
+
+def plot_samples2(templates,isort,samples,ax,fac=1,nc=-1):
+    cmap=plt.get_cmap('Set3')
+    ncells=len(templates[list(templates.keys())[0]])
+    linsp=np.arange(1,ncells+1)
+
+    nshift=0
+    for tmpl in templates.values():
+        #print(templates, tmpl)
+        if nc==-1:
+            ax.plot(nshift+tmpl[isort]*fac, linsp, '.r') 
+        else:
+            colrgb=np.array(cmap.colors[np.mod(nc,12)]).reshape(1,3)
+            ax.plot(nshift+tmpl[isort]*fac, linsp, '.', color=colrgb) 
+        nshift += .21
+        
+    for nsmpl in range(len(samples)):
+        ax.plot(nshift+samples[nsmpl][isort]*fac,linsp, '.k')
+        nshift +=.21
+        
+    ax.set_xlabel('Seq. #')
+    ax.set_ylabel('Sort seq#')
+
+    
+
+
+
+def subsampling_perms(labindices,traintarget): 
+
+    """
+    subsampling_perms
+    ______________________
+    
+    This is a function that shuffles the data indices so that 
+    different parts of the dataset are represented within each
+    subsampling.
+    
+    Input:  
+            - a list holding the indices of the specific label.
+    
+            - an integer equal to the amount of patterns needed.                  
+            
+    Output: 
+            - an array holding the indices for the test set.
+    
+            - an array holding the indices for the train set.
+              
+    """    
+    train_perms = []
+    test_perms = []
+    # Get the first permutation
+    lperm_i = list(np.random.permutation(labindices)) 
+    train_perms = lperm_i[0:traintarget]
+    test_perms = lperm_i[traintarget:]  
+
+    return train_perms, test_perms
+
+
+
 
 
 

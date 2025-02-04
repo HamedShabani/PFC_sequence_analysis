@@ -1013,6 +1013,7 @@ def apply_masks(sess_info,Masks,cond_numbers,cond_name,sessin_numbers,odd_even,s
     # cond_number=cond_number1 # 'outward_L_side'
     # mask_cond_burst_side= np.asarray(Masks['bursts_cond'])==cond_number
     # mask_cond_cell_side= np.asarray(Masks['cell_cond'][celid])==cond_number
+
     # mask_cond_t_side= np.asarray(Masks['conditions'])==cond_number
     # mask_cond_fr= np.asarray(Masks['fr_cond'])==cond_number
     mask_correct_fr= np.asarray(Masks['correct_failed_fr'])==trial_type
@@ -1020,8 +1021,10 @@ def apply_masks(sess_info,Masks,cond_numbers,cond_name,sessin_numbers,odd_even,s
     # cond_number=cond_number2 # 'outward_L_center'
     # mask_cond_burst_center= np.asarray(Masks['bursts_cond'])==cond_number
     # mask_cond_cell_center= np.asarray(Masks['cell_cond'][celid])==cond_number
+
     # mask_cond_t_center= np.asarray(Masks['conditions'])==cond_number
     # conndname2=list(cond_names.keys())[cond_number]
+
 
     mask_cond_burst= mask_cond_burst_side
     #mask_cond_cell= mask_cond_cell_side
@@ -1033,10 +1036,15 @@ def apply_masks(sess_info,Masks,cond_numbers,cond_name,sessin_numbers,odd_even,s
     run_data['seqs']=np.asarray(sess_info['seqs'])[mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']]
     run_data['bursts']=np.asarray(sess_info['bursts'])[mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']]
 
+
+
     #run_data['idpeaks_cells']=np.asarray(sess_info['Spike_times_cells'][celid])[mask_sess_cell & mask_cond_cell & mask_phase_cell]
 
     for celid in range(len(sess_info['Spike_times_cells'])):
         run_data['idpeaks_cells'][celid] = np.asarray(sess_info['Spike_times_cells'][celid])[mask_sess_cell[celid] & mask_cond_cell[celid] & mask_phase_cell[celid]]
+
+
+
 
    
     run_data['trial_idx_mask']=np.asarray(sess_info['trial_idx_mask'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
@@ -1046,7 +1054,9 @@ def apply_masks(sess_info,Masks,cond_numbers,cond_name,sessin_numbers,odd_even,s
     cell_trace_sess1=np.asarray(sess_info['extract'][celid])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']] 
 
     run_data['trace_cells']=np.asarray([x[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']] for x in sess_info['extract']])# raw trace of all cells
+
     run_data['lin_pos']=np.asarray(sess_info['lin_pos'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
+
     run_data['conditions']=np.asarray(Masks['conditions'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
 
 
@@ -1054,7 +1064,9 @@ def apply_masks(sess_info,Masks,cond_numbers,cond_name,sessin_numbers,odd_even,s
     run_data['y_loc']=np.asarray(sess_info['loc']['y'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase]
     run_data['speed']=np.asarray(sess_info['speed'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase]
 
- 
+    
+
+
     run_data['fr']=np.asarray(sess_info['fr'])[mask_sess_fr & mask_cond_fr &  mask_correct_fr & mask_phase_fr]
 
     t_all=np.asarray(sess_info['t'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase ]
@@ -1097,6 +1109,8 @@ def find_diffs(seq_rate_failed,pairs):
 
         diff_rate[pr]=diff_rt
     return diff_rate
+
+
 
 
         
@@ -1150,7 +1164,172 @@ def find_condition(input_nums,condition_dict):
 
     return side_center_mapping[result[0]]
 
- 
+
+
+
+
+def plot_samples2(templates,isort,samples,ax,fac=1,nc=-1):
+    cmap=plt.get_cmap('Set3')
+    ncells=len(templates[list(templates.keys())[0]])
+    linsp=np.arange(1,ncells+1)
+
+    nshift=0
+    for tmpl in templates.values():
+        #print(templates, tmpl)
+        if nc==-1:
+            ax.plot(nshift+tmpl[isort]*fac, linsp, '.r') 
+        else:
+            colrgb=np.array(cmap.colors[np.mod(nc,12)]).reshape(1,3)
+            ax.plot(nshift+tmpl[isort]*fac, linsp, '.', color=colrgb) 
+        nshift += .21
+        
+    for nsmpl in range(len(samples)):
+        ax.plot(nshift+samples[nsmpl][isort]*fac,linsp, '.k')
+        nshift +=.21
+        
+    ax.set_xlabel('Seq. #')
+    ax.set_ylabel('Sort seq#')
+
+    
+
+
+
+
+
+def subsampling_perms(labindices,traintarget): 
+
+    """
+    subsampling_perms
+    ______________________
+    
+    This is a function that shuffles the data indices so that 
+    different parts of the dataset are represented within each
+    subsampling.
+    
+    Input:  
+            - a list holding the indices of the specific label.
+    
+            - an integer equal to the amount of patterns needed.                  
+            
+    Output: 
+            - an array holding the indices for the test set.
+    
+            - an array holding the indices for the train set.
+              
+    """    
+    train_perms = []
+    test_perms = []
+    # Get the first permutation
+    lperm_i = list(np.random.permutation(labindices)) 
+    train_perms = lperm_i[0:traintarget]
+    test_perms = lperm_i[traintarget:]  
+
+    return train_perms, test_perms
+def train_test_model(x_dt,y_lb,subsamplings):
+
+    """
+    train_test_model
+    ______________________
+    
+    This is a function that decodes the data using the model of choise
+    A 2-fold subsampling procedure is implemented.
+    The label representation/contribution is kept within each fold.
+    
+    Input:  
+            - a numpy array holding the dataset. 
+            - a numpy array holding the labels.
+            - an integer equal to the dataset dimensionality.
+            - the learning rate and the amount of epochs for the model.
+            - an integer value equal to the amount of subsamplings requested.
+            - the type of model requested.
+            
+            Note : an easily additional input could be the option to have
+            ballanced label contribution  within subsamplings.
+            Uppon request I can implement that. 
+            
+    Output: 
+            - a list holding two arrays one with the mean ccr values 
+              of all subsamplings and one holding a ccr value for 
+              each pattern calculated over the subsampling process.               
+                  
+    """
+    
+    # Get the indices per label and their contribution % in train test sets
+    label0_indices = [ind for ind,x in enumerate(y_lb) if x==0]
+    label1_indices = [ind for ind,x in enumerate(y_lb) if x==1]    
+    # Get the size of the training and testing sets
+    train_size = int(np.ceil(x_dt.shape[0]*.8))
+    # Get the ratio of each label in the original set
+    label0_ratio = len(label0_indices)/(len(label0_indices)+len(label1_indices))
+    label1_ratio = len(label1_indices)/(len(label0_indices)+len(label1_indices))
+    # Get the target size for each label for the training-testing set
+
+    minlen=np.min((len(label0_indices),len(label1_indices)))
+    label0_train_target = int((minlen)/2)#int(np.ceil(train_size*label0_ratio))
+    label1_train_target = int((minlen)/2)#int(np.ceil(train_size*label1_ratio))
+    
+    # Innitiallize an array that will hold the ccrs
+    ccrs = []
+    # Initiallize two arrays that will hold the ccr per bin
+    correct = np.zeros((subsamplings,x_dt.shape[0]))
+    used    = np.zeros((subsamplings,x_dt.shape[0])) 
+    # Loop over the # subsamplings 
+    for nsub in range(subsamplings):
+        
+        # Generate n distinct permutations of the indices per label to be used in each subsampling
+        train0_perms,test0_perms = subsampling_perms(label0_indices,label0_train_target)
+        train1_perms,test1_perms = subsampling_perms(label1_indices,label1_train_target)
+        # Unite the indices from each label
+        #ind_train = train0_perms + train1_perms
+        #ind_test  = test0_perms + test1_perms      
+        ind_train = train0_perms[:label0_train_target] + train1_perms [:label0_train_target] 
+        ind_test  = test0_perms[:label0_train_target] + test1_perms[:label0_train_target] 
+        # Pick the data needed for the subsampling
+        y_train = np.copy(y_lb[ind_train])
+        y_test  = np.copy(y_lb[ind_test])
+        X_train = np.copy(x_dt[ind_train,:])
+        X_test  = np.copy(x_dt[ind_test,:])  
+        
+        if np.sum(X_train)==0:
+                X_train[0]=0.00000001
+              
+        # if len(np.unique(y_train))<2:
+        #     continue  
+        
+        #         continue
+        # if np.sum(np.asarray(X_train)[np.asarray(y_train==0)])==0:
+        #       continue
+        # if np.sum(np.asarray(X_train)[np.asarray(y_train==1)])==0:
+        #       continue
+        # Create an instance of the LDA model
+        lda = LinearDiscriminantAnalysis(solver='lsqr')
+        #print('len labels=',len(np.unique(y_train)),np.sum(X_test))
+        # Fit the model to the training data
+        lda.fit(X_train, y_train)
+
+        # Predict the class labels for the test set
+
+        y_pred = lda.predict(X_test)
+
+        # Calculate the accuracy of the model
+        #accuracy = balanced_accuracy_score(y_test, y_pred)
+        #print("Accuracy: "+cod, accuracy)
+
+        
+        cnt=0
+        ynt=0
+        for iy in range(len(y_pred)):
+                if y_pred[iy]==1 and y_test[iy]==1:    
+                        cnt+=1
+                elif y_pred[iy]==0 and y_test[iy]==0:    
+                        ynt+=1
+        # print('correct',cnt/sum(y_test))
+        # print('failed',ynt)
+
+
+        ccrs.append(np.sum(y_test==y_pred) / len(y_test))
+    return ccrs
+
 
 
 

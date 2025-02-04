@@ -449,6 +449,11 @@ def compute_corrleation(sorted_l,sorted_r):
 
 
 
+def calculate_proportions(count_dict, total_lists):
+    # Calculate the proportion for each element
+    proportion_dict = {k: v / total_lists for k, v in count_dict.items()}
+    return proportion_dict
+
 
 
 def shuffling_cluster_rates(sorted_l,sorted_r,cluster_pc_fractions_R,cluster_pc_fractions_L):    
@@ -619,6 +624,132 @@ def distance_cell_to_cluster(cluster_rate_all_animals,Cluster_types_all,cell_idx
 
 
 
+# Create a function to process data for each animal
+def merge_pvalues(data, animal_id):
+    clusters = {}
+    for key, value in data.items():
+        cluster = key.split('_')[1]
+        if cluster not in clusters:
+            clusters[cluster] = []
+        clusters[cluster].append(value)
+
+    significant_threshold = 0.05
+    percent_significant = {}
+    for cluster, p_values in clusters.items():
+        significant_count = sum(1 for p in p_values if p < significant_threshold)
+        percent_significant[cluster] = (significant_count / len(p_values)) * 100
+
+    return pd.DataFrame.from_dict(percent_significant, orient='index', columns=[f'Animal_{animal_id}_Percentage'])
+
+
+
+
+def distance_cell_to_cluster_type(cluster_rate_all_animals,data_animal,Cluster_types_all,rate_L_R,cell_types_all,animal_name,plotrates=False):
+    '''#Cluster_types_all : Index of clusters and their identity
+    #rate_L_R : Ratemap of all cells
+    #  cell_types_all: index of cells and their identity
+    # This function find the distance between peaks of rate maps of different cell types and peaks of different clusters of the same type
+        '''
+
+    c2c_Distances={}
+    c2c_Distances_sh={}
+    for cell_tpe in Cluster_types_all[animal_name].keys():# type
+        
+        rate_cluster=[]
+        for iclstr,tmp_nbr in enumerate(Cluster_types_all[animal_name][cell_tpe]):# cluster
+            
+            template_cell_idx=data_animal['template'][tmp_nbr]# template cell indices for a type
+
+            cluster_cll_idx=cell_types_all[animal_name][cell_tpe]#  cell indices for a type
+
+            cluster_and_cell_type=np.intersect1d(cluster_cll_idx,template_cell_idx)# cell of a type that are in a cluster type
+
+
+
+            rate_cell=[]
+            distance_cell_to_cluster_org=[]
+            distance_cell_to_cluster_shuffled=[]
+            #for icl,cell_nbr in enumerate(cell_types_all[animal_name][cell_tpe]):# cells
+
+            for icl,cell_nbr in enumerate(cluster_and_cell_type):# cells
+
+                
+                #dist=np.abs(np.argmax(rate_L_R[animal_name+'_L']['rate_all'][cell_nbr])-np.argmax(cluster_rate_all_animals[animal_name]['L'][tmp_nbr]))
+                dist=(np.argmax(rate_L_R[animal_name+'_L']['rate_all'][cell_nbr])-np.argmax(cluster_rate_all_animals[animal_name]['L'][tmp_nbr]))
+
+                distance_cell_to_cluster_org.append(dist)
+                
+                distance_cell_to_cluster_shuffled_cell=[]# shuffled dictance for each cell
+
+
+                for sh in range(1000):
+                    rmap=rate_L_R[animal_name+'_L']['rate_all'][cell_nbr]
+                    rate_sh= np.roll(rmap,  random.randint(1, len(rmap) - 1))# shuffle rate map
+                    #dist_sh=np.abs(np.argmax(rate_sh)-np.argmax(cluster_rate_all_animals[animal_name]['L'][tmp_nbr]))
+                    dist_sh=(np.argmax(rate_sh)-np.argmax(cluster_rate_all_animals[animal_name]['L'][tmp_nbr]))
+
+                    distance_cell_to_cluster_shuffled_cell.append(dist_sh)
+
+
+                # mean_distance_sh=[]
+                # for ish in range(len(rate_L_R[animal_name+'_L']['rate_all_shuffled'])):
+                #     dist_sh=np.abs(np.argmax(rate_L_R[animal_name+'_L']['rate_all_shuffled'][ish][cell_nbr])-np.argmax(cluster_rate_all_animals[animal_name]['L'][tmp_nbr]))
+                #     distance_cell_to_cluster_shuffled_cell.append(dist_sh)
+                distance_cell_to_cluster_shuffled.append(distance_cell_to_cluster_shuffled_cell)# distances of all shuffled data to cluster
+                
+                
+                p_val=np.sum(dist>distance_cell_to_cluster_shuffled_cell)/len(distance_cell_to_cluster_shuffled_cell)
+                #print(cell_tpe+str(tmp_nbr)+'_'+str(cell_nbr)+':',p_val)
+                rate_cell.append(rate_L_R[animal_name+'_L']['rate_all'][cell_nbr])
+
+                # plt.figure()
+                # plt.hist(distance_cell_to_cluster_shuffled_cell,alpha=.2)
+                # plt.vlines(dist,0,100,color='r')
+                # plt.title(cell_tpe+str(tmp_nbr)+'_'+str(cell_nbr)+':'+str(p_val))
+
+
+                #mean_distance_sh.append(np.mean(distance_cell_to_cluster_shuffled_cell))# avg of shuffled for each cell
+
+            #p_val_all_cells=np.sum(mean_distance_sh>distance_cell_to_cluster)/len(distance_cell_to_cluster_shuffled_cell)# compare distance to clusters for all cells with the average of the shuffled
+
+
+            # c2c_Distances[cell_tpe+str(iclstr)]=distance_cell_to_cluster_org
+            # c2c_Distances_sh[cell_tpe+str(iclstr)]=distance_cell_to_cluster_shuffled
+
+            c2c_Distances[cell_tpe+str(tmp_nbr)]=distance_cell_to_cluster_org
+            c2c_Distances_sh[cell_tpe+str(tmp_nbr)]=distance_cell_to_cluster_shuffled
+
+            rate_cluster.append(cluster_rate_all_animals[animal_name]['L'][tmp_nbr])
+
+            if plotrates:
+                fig, (ax,ax2) = plt.subplots(1, 2,figsize=(16, 8))
+                im = ax.pcolormesh(y_ax, np.arange(np.shape(rate_cell)[0]), rate_cell)
+
+            
+                    
+                plt.colorbar(im, ax=ax)
+                plt.subplot(122)
+                ax.set_title('Cell rate maps'+ animal_name+cell_tpe+str(tmp_nbr))
+                #fig, ax = plt.subplots(figsize=(16, 8))
+                #im = ax2.pcolormesh(y_ax, np.arange(np.shape(cluster_pc_fractions_L['rate_significant'])[0]), cluster_pc_fractions_L['rate_significant'])
+
+                # if len (rate_cluster)>1:
+                #     im = ax2.pcolormesh(y_ax, np.arange(np.shape(rate_cluster)[0]), rate_cluster)
+                # else:
+
+                ax2.plot(cluster_rate_all_animals[animal_name]['L'][tmp_nbr])
+
+
+                # plt.colorbar(im, ax=ax2)
+                ax2.set_title('cluster'+ animal_name+cell_tpe+str(tmp_nbr))
+                # plt.suptitle('Target cells \n'+'Median of correlation beween R and L runs Arms: '+"%.2f"%(np.nanmedian(np.asarray(similarity_between_l_and_r_all)[mask_cut & mask_corr])))
+
+                # plt.figure()
+                # plt.hist(distance_cell_to_cluster)
+                # plt.title('distance to cluster'+ animal_name+cell_tpe+str(tmp_nbr)
+
+    return  c2c_Distances,c2c_Distances_sh
+
 
 
 
@@ -716,6 +847,40 @@ def get_rate_all(data,neuron_tspidx,occ_gau,yedges,sigma_yidx,expanded_all_burst
     return r_all,counts_all,p_all
 
 
+# def get_rate_all(data,neuron_tspidx,occ_gau,yedges,sigma_yidx,expanded_all_burst_tidxs,num_neurons,y_ax,y,shuffle_spikes=False):
+#     # This function uses the spike time to estimate the rate maps of all cells 
+#     # Compute the place fields
+#     counts_all = np.zeros((num_neurons, y_ax.shape[0])).astype(float) # for storing spike counts. Not used.
+#     p_all=  np.zeros(y_ax.shape[0]).astype(float)
+#     r_all = np.zeros((num_neurons, y_ax.shape[0])).astype(float)  # for storing firing rates
+
+
+#     for nid in range(num_neurons):
+#         tspidx = neuron_tspidx[nid]
+
+        
+#         # Exclude spike times occuring in the neighours(=1) of the burst events.
+#         masked_tspidx =exclude_idx(tspidx, expanded_all_burst_tidxs)
+        
+#         if shuffle_spikes:# shuffle spike times for getting random place fields
+
+#             masked_tspidx,spk=spike_shuffle(data,masked_tspidx,None)
+
+
+#         # Get "spike positions"
+#         neuron_ysp = y[masked_tspidx]
+#         # Compute smoothed firing rate map
+#         rate, counts_ysp_gau,P_x =GetRate(neuron_ysp, occ_gau, yedges, sigma_yidx)
+
+#         #print(len(masked_tspidx),len(masked_tspidx_sh))
+        
+#         # Store all of them
+#         r_all[nid, :] = rate
+#         counts_all[nid, :] = counts_ysp_gau  
+#         p_all=P_x
+#     return r_all,counts_all,p_all
+
+
 
 
 
@@ -766,6 +931,14 @@ def get_rate_all_clusters(data,target_cluids_long,y,occ_gau,yedges,sigma_yidx,ex
 
 
 
+
+# # Function to calculate the percentage of p-values less than a given threshold
+# def calculate_percentage_below_threshold(data, condition, cluster, side, context, key, threshold=0.025):
+#     values = data.get(condition, {}).get(cluster, {}).get(side, {}).get(context, {}).get(key, [])
+#     if not values:
+#         return 0.0
+#     below_threshold = sum(1 for v in values if v < threshold)
+#     return (below_threshold / len(values)) * 100
 
 
 
@@ -904,6 +1077,102 @@ def shuffling_cluster_rates_new(sorted_l,sorted_r,cluster_pc_fractions_L,cluster
 
 
 
+
+
+
+
+
+# def significant_pc_to_tc_2(Rates,Rates_sh,TC_learned,PC_learning,PC_learned,animal,y_ax):
+#     # get indices of the cells that are pc in learneg and became tc in learned
+#     epsilon=0
+#     pc_to_tc_learned = TC_learned[PC_learning]# place cells that are TC after learning
+#     pc_to_pc_learned = PC_learned[PC_learning]# place cells that are TC after learning
+
+#     non_si_learned=~(TC_learned | PC_learned)
+
+#     pc_to_nonsi= non_si_learned[PC_learning]# PCs in learning that are niether pc nor tc after learning
+
+#     rate_pc_learning_L=(Rates['learning'][animal]['L'][PC_learning])
+#     rate_pc_learning_R=(Rates['learning'][animal]['R'][PC_learning])
+
+#     rate_pc_learned_L=(Rates['learned'][animal]['L'][PC_learning])
+#     rate_pc_learned_R=(Rates['learned'][animal]['R'][PC_learning])
+
+#     correlation_pc_L=[np.corrcoef(x,y)[0][1] for x,y in zip(rate_pc_learning_L,rate_pc_learned_R)]
+#     correlation_pc_R=[np.corrcoef(x,y)[0][1] for x,y in zip(rate_pc_learning_R,rate_pc_learned_L)]
+
+
+#     shuffle_numbers=len(Rates_sh['learning'][animal]['L'])
+#     correlation_pc_sh_L=[]#np.zeros(shuffle_numbers)
+#     correlation_pc_sh_R=[]
+#     for sh in np.arange(shuffle_numbers):
+#         #rate_sh_pc_learning=(Rates_sh['learning'][animal]['L'][sh][PC_to_Non_PC])
+#         rate_sh_pc_learned_R=(Rates_sh['learned'][animal]['R'][sh][PC_learning])
+#         correlation_pc_sh_L.append([np.corrcoef(x,y+epsilon)[0][1] for x,y in zip(rate_pc_learning_L,rate_sh_pc_learned_R)])
+
+#         rate_sh_pc_learned_L=(Rates_sh['learned'][animal]['L'][sh][PC_learning])
+#         correlation_pc_sh_R.append([np.corrcoef(x,y+epsilon)[0][1] for x,y in zip(rate_pc_learning_R,rate_sh_pc_learned_L)])
+
+
+
+#     pvals_L = np.sum([np.asarray(correlation_pc_L)>np.asarray(x) for x in correlation_pc_sh_L],axis=0)/shuffle_numbers
+#     significants_L=pvals_L>.95
+#     #significants_L = pc_to_tc_learned & significants2# PC cells that are signficantly stable after learning and are TC in learned
+
+#     pvals_R = np.sum([np.asarray(correlation_pc_R)>np.asarray(x) for x in correlation_pc_sh_R],axis=0)/shuffle_numbers
+#     significants_R=pvals_R>.95
+#     #significants_R = pc_to_tc_learned & significants2# PC cells that are signficantly stable  after learning and are TC in learned
+
+#     significant_TC_stbl=(significants_L | significants_R) & pc_to_tc_learned# PC cells that are signficantly stable after learning and are TC in learned
+#     significant_PC_stbl=(significants_L | significants_R) & pc_to_pc_learned# PC cells that are signficantly stable after learning and are PC in learned
+#     significant_nonsi_stbl= pc_to_nonsi# PC cells that are signficantly stable after learning but are not TC or PC in learned
+
+#     TC_unstbl=~(significants_L | significants_R) & pc_to_tc_learned# PC cells that are signficantly stable after learning and are TC in learned
+#     PC_unstbl=~(significants_L | significants_R) & pc_to_pc_learned# PC cells that are signficantly stable after learning and are TC in learned
+
+
+
+#     if 1:
+#         significant_TC_stbl_L=(significants_L ) & pc_to_tc_learned# PC cells that are signficantly stable after learning and are TC in learned
+#     if 0:# np.sum(significant_TC_stbl_L)>0:
+            
+#             # Create figure and axes
+#         fig, (ax, ax2, ax3,ax4) = plt.subplots(1, 4, figsize=(12, 4), gridspec_kw={'width_ratios': [9, 9, 9,9]})
+#         # Get max for normalization
+
+#         sig_sort_idx_e = np.argsort(np.argmax(rate_pc_learning_L[significant_TC_stbl_L], axis=1))
+
+#         max_o_e = np.max([np.max(rate_pc_learning_L[significant_TC_stbl_L][sig_sort_idx_e]), np.max(rate_pc_learned_R[significant_TC_stbl_L][sig_sort_idx_e])])
+
+#         # Plot the rate maps for PC in Learning
+#         im1 = ax.pcolormesh(y_ax, np.arange(np.sum(significant_TC_stbl_L)), rate_pc_learning_L[significant_TC_stbl_L][sig_sort_idx_e] / max_o_e, rasterized=True)
+#         plt.colorbar(im1, ax=ax)
+#         ax.set_title('PC in Learning (Left)', fontsize=18)
+#         ax.set_xlabel('Position [norm]', fontsize=16)
+#         ax.set_ylabel('Cell #', fontsize=16)
+
+#         # Plot the rate maps for PC in Learning
+#         im1 = ax2.pcolormesh(y_ax, np.arange(np.sum(significant_TC_stbl_L)), rate_pc_learning_R[significant_TC_stbl_L][sig_sort_idx_e] / max_o_e, rasterized=True)
+#         plt.colorbar(im1, ax=ax2)
+#         ax2.set_title('PC in Learning (Right)', fontsize=18)
+#         ax2.set_xlabel('Position [norm]', fontsize=16)
+#         ax2.set_ylabel('Cell #', fontsize=16)
+
+#         # Plot the rate maps for PC in Learning
+#         im1 = ax3.pcolormesh(y_ax, np.arange(np.sum(significant_TC_stbl_L)), rate_pc_learned_L[ significant_TC_stbl_L][sig_sort_idx_e] / max_o_e, rasterized=True)
+#         plt.colorbar(im1, ax=ax3)
+#         ax3.set_title('TC in Learned (Left)', fontsize=10)
+#         ax3.set_xlabel('Position [norm]', fontsize=16)
+#         ax3.set_ylabel('Cell #', fontsize=16)
+
+#         # Plot the rate maps for PC in Learning
+#         im4 = ax4.pcolormesh(y_ax, np.arange(np.sum(significant_TC_stbl_L)), rate_pc_learned_R[significant_TC_stbl_L][sig_sort_idx_e] / max_o_e, rasterized=True)
+#         plt.colorbar(im4, ax=ax4)
+#         ax4.set_title('TC in Learned(Right)', fontsize=10)
+#         ax4.set_xlabel('Position [norm]', fontsize=16)
+#         ax4.set_ylabel('Cell #', fontsize=16)
+
+#     return significant_TC_stbl,significant_PC_stbl,TC_unstbl,PC_unstbl,significant_nonsi_stbl
 
 def significant_pc_to_tc_2(Rates,Rates_sh,TC_learned,PC_learning,PC_learned,animal,y_ax):
     # get indices of the cells that are pc in learneg and became tc in learned
@@ -1331,6 +1600,122 @@ def distance_cell_to_cluster2(cluster_rate_all_animals,Cluster_types_all,cell_id
 
 
 
+def distance_cell_to_cluster_type(cluster_rate_all_animals,data_animal,Cluster_types_all,rate_L_R,cell_types_all,animal_name,plotrates=False):
+    '''#Cluster_types_all : Index of clusters and their identity
+    #rate_L_R : Ratemap of all cells
+    #  cell_types_all: index of cells and their identity
+    # This function find the distance between peaks of rate maps of different cell types and peaks of different clusters of the same type
+        '''
+
+    c2c_Distances={}
+    c2c_Distances_sh={}
+    for cell_tpe in Cluster_types_all[animal_name].keys():# type
+        
+        rate_cluster=[]
+        for iclstr,tmp_nbr in enumerate(Cluster_types_all[animal_name][cell_tpe]):# cluster
+            
+            template_cell_idx=data_animal['template'][tmp_nbr]# template cell indices for a type
+
+            cluster_cll_idx=cell_types_all[animal_name][cell_tpe]#  cell indices for a type
+
+            cluster_and_cell_type=np.intersect1d(cluster_cll_idx,template_cell_idx)# cell of a type that are in a cluster type
+
+
+
+            rate_cell=[]
+            distance_cell_to_cluster_org=[]
+            distance_cell_to_cluster_shuffled=[]
+            #for icl,cell_nbr in enumerate(cell_types_all[animal_name][cell_tpe]):# cells
+
+            for icl,cell_nbr in enumerate(cluster_and_cell_type):# cells
+
+                
+                #dist=np.abs(np.argmax(rate_L_R[animal_name+'_L']['rate_all'][cell_nbr])-np.argmax(cluster_rate_all_animals[animal_name]['L'][tmp_nbr]))
+                dist=(np.argmax(rate_L_R[animal_name+'_L']['rate_all'][cell_nbr])-np.argmax(cluster_rate_all_animals[animal_name]['L'][tmp_nbr]))
+
+                distance_cell_to_cluster_org.append(dist)
+                
+                distance_cell_to_cluster_shuffled_cell=[]# shuffled dictance for each cell
+
+
+                for sh in range(1000):
+                    rmap=rate_L_R[animal_name+'_L']['rate_all'][cell_nbr]
+                    rate_sh= np.roll(rmap,  random.randint(1, len(rmap) - 1))# shuffle rate map
+                    #dist_sh=np.abs(np.argmax(rate_sh)-np.argmax(cluster_rate_all_animals[animal_name]['L'][tmp_nbr]))
+                    dist_sh=(np.argmax(rate_sh)-np.argmax(cluster_rate_all_animals[animal_name]['L'][tmp_nbr]))
+
+                    distance_cell_to_cluster_shuffled_cell.append(dist_sh)
+
+
+                # mean_distance_sh=[]
+                # for ish in range(len(rate_L_R[animal_name+'_L']['rate_all_shuffled'])):
+                #     dist_sh=np.abs(np.argmax(rate_L_R[animal_name+'_L']['rate_all_shuffled'][ish][cell_nbr])-np.argmax(cluster_rate_all_animals[animal_name]['L'][tmp_nbr]))
+                #     distance_cell_to_cluster_shuffled_cell.append(dist_sh)
+                distance_cell_to_cluster_shuffled.append(distance_cell_to_cluster_shuffled_cell)# distances of all shuffled data to cluster
+                
+                
+                p_val=np.sum(dist>distance_cell_to_cluster_shuffled_cell)/len(distance_cell_to_cluster_shuffled_cell)
+                #print(cell_tpe+str(tmp_nbr)+'_'+str(cell_nbr)+':',p_val)
+                rate_cell.append(rate_L_R[animal_name+'_L']['rate_all'][cell_nbr])
+
+                # plt.figure()
+                # plt.hist(distance_cell_to_cluster_shuffled_cell,alpha=.2)
+                # plt.vlines(dist,0,100,color='r')
+                # plt.title(cell_tpe+str(tmp_nbr)+'_'+str(cell_nbr)+':'+str(p_val))
+
+
+                #mean_distance_sh.append(np.mean(distance_cell_to_cluster_shuffled_cell))# avg of shuffled for each cell
+
+            #p_val_all_cells=np.sum(mean_distance_sh>distance_cell_to_cluster)/len(distance_cell_to_cluster_shuffled_cell)# compare distance to clusters for all cells with the average of the shuffled
+
+
+            # c2c_Distances[cell_tpe+str(iclstr)]=distance_cell_to_cluster_org
+            # c2c_Distances_sh[cell_tpe+str(iclstr)]=distance_cell_to_cluster_shuffled
+
+            c2c_Distances[cell_tpe+str(tmp_nbr)]=distance_cell_to_cluster_org
+            c2c_Distances_sh[cell_tpe+str(tmp_nbr)]=distance_cell_to_cluster_shuffled
+
+            rate_cluster.append(cluster_rate_all_animals[animal_name]['L'][tmp_nbr])
+
+            if plotrates:
+                fig, (ax,ax2) = plt.subplots(1, 2,figsize=(16, 8))
+                im = ax.pcolormesh(y_ax, np.arange(np.shape(rate_cell)[0]), rate_cell)
+
+            
+                    
+                plt.colorbar(im, ax=ax)
+                plt.subplot(122)
+                ax.set_title('Cell rate maps'+ animal_name+cell_tpe+str(tmp_nbr))
+                #fig, ax = plt.subplots(figsize=(16, 8))
+                #im = ax2.pcolormesh(y_ax, np.arange(np.shape(cluster_pc_fractions_L['rate_significant'])[0]), cluster_pc_fractions_L['rate_significant'])
+
+                # if len (rate_cluster)>1:
+                #     im = ax2.pcolormesh(y_ax, np.arange(np.shape(rate_cluster)[0]), rate_cluster)
+                # else:
+
+                ax2.plot(cluster_rate_all_animals[animal_name]['L'][tmp_nbr])
+
+
+                # plt.colorbar(im, ax=ax2)
+                ax2.set_title('cluster'+ animal_name+cell_tpe+str(tmp_nbr))
+                # plt.suptitle('Target cells \n'+'Median of correlation beween R and L runs Arms: '+"%.2f"%(np.nanmedian(np.asarray(similarity_between_l_and_r_all)[mask_cut & mask_corr])))
+
+                # plt.figure()
+                # plt.hist(distance_cell_to_cluster)
+                # plt.title('distance to cluster'+ animal_name+cell_tpe+str(tmp_nbr)
+
+    return  c2c_Distances,c2c_Distances_sh
+
+
+
+
+
+
+
+
+
+
+
 
 def plot_kl_distributions_ss2(js_divergence_ss, p_value_corr_js_, name, type='Correct'):
     plt.figure(figsize=(5, 3))
@@ -1689,6 +2074,105 @@ def significant_pc_to_tc(Rates,Rates_sh,TC_learned,PC_to_Non_PC,animal):
 
     return significants_L,significants_R,rate_pc_to_nonpc_learned_L,rate_pc_to_nonpc_learned_R,rate_pc_learning_L,rate_pc_learning_R
 
+
+# def significant_pc_to_tc_2(Rates,Rates_sh,TC_learned,PC_learning,PC_learned,animal,y_ax):
+#     # get indices of the cells that are pc in learneg and became tc in learned
+#     epsilon=0
+#     pc_to_tc_learned = TC_learned[PC_learning]# place cells that are TC after learning
+#     pc_to_pc_learned = PC_learned[PC_learning]# place cells that are TC after learning
+
+#     non_si_learned=~(TC_learned | PC_learned)
+
+#     pc_to_nonsi= non_si_learned[PC_learning]# PCs in learning that are niether pc nor tc after learning
+
+#     rate_pc_learning_L=(Rates['learning'][animal]['L'][PC_learning])
+#     rate_pc_learning_R=(Rates['learning'][animal]['R'][PC_learning])
+
+#     rate_pc_learned_L=(Rates['learned'][animal]['L'][PC_learning])
+#     rate_pc_learned_R=(Rates['learned'][animal]['R'][PC_learning])
+
+#     correlation_pc_L=[np.corrcoef(x,y)[0][1] for x,y in zip(rate_pc_learning_L,rate_pc_learned_R)]
+#     correlation_pc_R=[np.corrcoef(x,y)[0][1] for x,y in zip(rate_pc_learning_R,rate_pc_learned_L)]
+
+
+#     shuffle_numbers=len(Rates_sh['learning'][animal]['L'])
+#     correlation_pc_sh_L=[]#np.zeros(shuffle_numbers)
+#     correlation_pc_sh_R=[]
+#     for sh in np.arange(shuffle_numbers):
+#         #rate_sh_pc_learning=(Rates_sh['learning'][animal]['L'][sh][PC_to_Non_PC])
+#         rate_sh_pc_learned_R=(Rates_sh['learned'][animal]['R'][sh][PC_learning])
+#         correlation_pc_sh_L.append([np.corrcoef(x,y+epsilon)[0][1] for x,y in zip(rate_pc_learning_L,rate_sh_pc_learned_R)])
+
+#         rate_sh_pc_learned_L=(Rates_sh['learned'][animal]['L'][sh][PC_learning])
+#         correlation_pc_sh_R.append([np.corrcoef(x,y+epsilon)[0][1] for x,y in zip(rate_pc_learning_R,rate_sh_pc_learned_L)])
+
+    
+#     overlap=500# total shift length
+#     max_corrs, stable_fields_L = compute_max_correlation(rate_pc_learning_L, rate_pc_learned_R, overlap)
+#     max_corrs, stable_fields_R = compute_max_correlation(rate_pc_learning_R, rate_pc_learned_L, overlap)
+#     significants_L=stable_fields_L
+#     significants_R=stable_fields_R
+
+
+
+
+#     # pvals_L = np.sum([np.asarray(correlation_pc_L)>np.asarray(x) for x in correlation_pc_sh_L],axis=0)/shuffle_numbers
+#     # significants_L=pvals_L>.95
+#     # #significants_L = pc_to_tc_learned & significants2# PC cells that are signficantly stable after learning and are TC in learned
+
+#     # pvals_R = np.sum([np.asarray(correlation_pc_R)>np.asarray(x) for x in correlation_pc_sh_R],axis=0)/shuffle_numbers
+#     # significants_R=pvals_R>.95
+#     # #significants_R = pc_to_tc_learned & significants2# PC cells that are signficantly stable  after learning and are TC in learned
+
+#     significant_TC_stbl=(significants_L | significants_R) & pc_to_tc_learned# PC cells that are signficantly stable after learning and are TC in learned
+#     significant_PC_stbl=(significants_L | significants_R) & pc_to_pc_learned# PC cells that are signficantly stable after learning and are PC in learned
+#     significant_nonsi_stbl= pc_to_nonsi# PC cells that are signficantly stable after learning but are not TC or PC in learned
+
+#     TC_unstbl=~(significants_L | significants_R) & pc_to_tc_learned# PC cells that are signficantly stable after learning and are TC in learned
+#     PC_unstbl=~(significants_L | significants_R) & pc_to_pc_learned# PC cells that are signficantly stable after learning and are TC in learned
+
+
+
+#     if 1:
+#         significant_TC_stbl_L=(significants_L ) & pc_to_tc_learned# PC cells that are signficantly stable after learning and are TC in learned
+
+#             # Create figure and axes
+#         fig, (ax, ax2, ax3,ax4) = plt.subplots(1, 4, figsize=(12, 4), gridspec_kw={'width_ratios': [9, 9, 9,9]})
+#         # Get max for normalization
+
+#         sig_sort_idx_e = np.argsort(np.argmax(rate_pc_learning_L[significant_TC_stbl_L], axis=1))
+
+#         max_o_e = np.max([np.max(rate_pc_learning_L[significant_TC_stbl_L][sig_sort_idx_e]), np.max(rate_pc_learned_R[significant_TC_stbl_L][sig_sort_idx_e])])
+
+#         # Plot the rate maps for PC in Learning
+#         im1 = ax.pcolormesh(y_ax, np.arange(np.sum(significant_TC_stbl_L)), rate_pc_learning_L[significant_TC_stbl_L][sig_sort_idx_e] / max_o_e, rasterized=True)
+#         plt.colorbar(im1, ax=ax)
+#         ax.set_title('PC in Learning (Left)', fontsize=18)
+#         ax.set_xlabel('Position [norm]', fontsize=16)
+#         ax.set_ylabel('Cell #', fontsize=16)
+
+#         # Plot the rate maps for PC in Learning
+#         im1 = ax2.pcolormesh(y_ax, np.arange(np.sum(significant_TC_stbl_L)), rate_pc_learning_R[significant_TC_stbl_L][sig_sort_idx_e] / max_o_e, rasterized=True)
+#         plt.colorbar(im1, ax=ax2)
+#         ax2.set_title('PC in Learning (Right)', fontsize=18)
+#         ax2.set_xlabel('Position [norm]', fontsize=16)
+#         ax2.set_ylabel('Cell #', fontsize=16)
+
+#         # Plot the rate maps for PC in Learning
+#         im1 = ax3.pcolormesh(y_ax, np.arange(np.sum(significant_TC_stbl_L)), rate_pc_learned_L[ significant_TC_stbl_L][sig_sort_idx_e] / max_o_e, rasterized=True)
+#         plt.colorbar(im1, ax=ax3)
+#         ax3.set_title('TC in Learned (Left)', fontsize=10)
+#         ax3.set_xlabel('Position [norm]', fontsize=16)
+#         ax3.set_ylabel('Cell #', fontsize=16)
+
+#         # Plot the rate maps for PC in Learning
+#         im4 = ax4.pcolormesh(y_ax, np.arange(np.sum(significant_TC_stbl_L)), rate_pc_learned_R[significant_TC_stbl_L][sig_sort_idx_e] / max_o_e, rasterized=True)
+#         plt.colorbar(im4, ax=ax4)
+#         ax4.set_title('TC in Learned(Right)', fontsize=10)
+#         ax4.set_xlabel('Position [norm]', fontsize=16)
+#         ax4.set_ylabel('Cell #', fontsize=16)
+
+#     return significant_TC_stbl,significant_PC_stbl,TC_unstbl,PC_unstbl,significant_nonsi_stbl
 
 
 
