@@ -22,7 +22,8 @@ import matplotlib as mpl
 from scipy.spatial.distance import jensenshannon
 from scipy.stats import entropy
 from scipy.signal import find_peaks
-
+from helper_functions import separate_in,separate_in_2d_array,linearize_2d_track_single_run
+import os
 Tspare=.5
 
 
@@ -1742,3 +1743,781 @@ def plot_sequences_new(mat, seq, vec, idpeaks, sig, fs, speed_trl, poprate, xlim
 
     # Return figures and axes
     return fig, fig2, ax, ax0, ax1, ax2
+
+
+
+
+
+################## Read_and_cluster_functions################################################################   
+
+
+def process_sessions(task, dates, folders, datafolder, signal_type, use_uniqueindex=True):
+    """
+    Process session data to compute trial rates, identify cells active across all sessions,
+    and plot the correct trial rate for each session.
+
+    Parameters:
+        task (list of str): List of task names.
+        dates (list of str): List of session dates.
+        folders (list of str): List of animal (folder) identifiers.
+        datafolder (str): Base directory where data is stored.
+        signal_type (str): String appended to filenames to indicate the signal type.
+        use_uniqueindex (bool): If True, process and filter cells active in all sessions.
+
+    Returns:
+        dict: A dictionary containing:
+            - 'trial_number': (currently unused) trial information.
+            - 'correctrate': List of tuples (filename, correct trial rate).
+            - 'failedrate': (currently reset to an empty list at the end) failed trial rate info.
+            - 'true_cell_idx': List of cell indices from metadata.
+            - 'mask_commonids': Boolean array marking cells active across all sessions.
+            - 'ncells': Number of cells active in every session.
+            - 'session_mask': Dictionary mapping session names to an index.
+    """
+    trial_number = {}
+    correctrate = []
+    failedrate = []
+    true_cell_idx = []
+
+    if use_uniqueindex:
+        # Loop over each task, date, and folder to process the sessions
+        for t, current_task in enumerate(task):
+            print(current_task)
+            for date in dates:
+                for fol in folders:
+                    # Choose filename based on the task type.
+                    if current_task == 'sleep_learned_after':
+                        # Be careful: if t==0 then task[t-1] may not exist.
+                        if t == 0:
+                            print("Warning: 'sleep_learned_after' encountered as the first task. Skipping...")
+                            continue
+                        filename = f"{date}_gcamp6f{fol}_{task[t-1]}.mat"
+                    else:
+                        filename = f"{date}_gcamp6f{fol}_{current_task}.mat"
+                    
+                    filepath = os.path.join(datafolder, fol, filename)
+                    if os.path.exists(filepath):
+                        # Generate an alternative filename (not used further in this snippet)
+                        if current_task == 'sleep_learned_after':
+                            base_filename = f"{date}_gcamp6f{fol}_{current_task}.mat"[:-4]
+                            filenames = [f"{base_filename}_{signal_type}"]
+                        else:
+                            base_filename = filename[:-4]
+                            filenames = [f"{base_filename}_{signal_type}"]
+
+                        data = loadmat(filepath)
+                        print(os.path.join(fol, filename))
+
+                        # For specific tasks, calculate trial rates.
+                        if current_task in ['task_learning', 'task_learned']:
+                            num_failed = len(data['EvtT']['failed_trials'])
+                            num_correct = len(data['EvtT']['correct_trials'])
+                            total_trials = num_failed + num_correct
+                            # Avoid division by zero
+                            if total_trials > 0:
+                                failed_rate = num_failed / total_trials
+                                correct_rate = num_correct / total_trials
+                            else:
+                                failed_rate = 0
+                                correct_rate = 0
+
+                            failedrate.append((filename, failed_rate))
+                            correctrate.append((filename, correct_rate))
+
+                        # Save cell index data from metadata.
+                        true_cell_idx.append(data['metadata']['CellRegCellID'])
+
+    # Extract session names and correct rates for plotting.
+    session_names = [item[0] for item in correctrate]
+    correct_values = [item[1] for item in correctrate]
+
+    # Plot the correct trial rate.
+    plt.figure()
+    plt.bar(session_names, correct_values)
+    plt.xticks(rotation=90)
+    # Note: 'fol' here is from the innermost loop; adjust if needed.
+    plt.title(f"{fol} correct trial rate")
+    plt.hlines(0.7, -1, len(session_names) + 1, colors='k', linestyles='dashed')
+    plt.hlines(0.5, -1, len(session_names) + 1, colors='r', linestyles='dashed')
+    plt.xlim([-1, len(session_names)])
+    plt.tight_layout()
+    plt.show()
+
+    # Create a dictionary to map each session name to an index.
+    session_mask = {name: idx for idx, name in enumerate(session_names)}
+
+    # Identify cells that are active in all sessions.
+    # Transpose the true_cell_idx list so that each row corresponds to one cell across sessions.
+    true_cell_idx_array = np.array(true_cell_idx).T
+    common_cell_indices = [i for i in range(true_cell_idx_array.shape[0])
+                           if -1 not in true_cell_idx_array[i, :]]
+    
+    mask_commonids = np.zeros(true_cell_idx_array.shape[0], dtype=bool)
+    mask_commonids[common_cell_indices] = True
+    ncells = len(common_cell_indices)
+
+    # Reset failedrate (if this is intended in your workflow)
+    failedrate = []
+
+    print('Number of active cells during tasks:', ncells)
+
+    # Return collected results.
+    return {
+        'trial_number': trial_number,
+        'correctrate': correctrate,
+        'failedrate': failedrate,
+        'true_cell_idx': true_cell_idx,
+        'mask_commonids': mask_commonids,
+        'ncells': ncells,
+        'session_mask': session_mask,
+        'newidx':common_cell_indices
+    }
+
+
+
+
+
+def process_animal_data(task, dates, folders, datafolder, signal_type, burst_len, tau,
+                        place_cells, significant_pc, newidx, winlen, thr_burts, session_mask, skel):
+    """
+    Process and concatenate data from each animal/session.
+    
+    Parameters:
+        task (list of str): Task names.
+        dates (list of str): Session dates.
+        folders (list of str): Animal identifiers (folder names).
+        datafolder (str): Base folder where data is stored.
+        signal_type (str): Suffix for the signal (e.g., 'deconv').
+        burst_len (str): Burst length (used in descriptor string).
+        tau (float): Time constant for deconvolution.
+        place_cells (bool): Whether to analyze only significant place cells.
+        significant_pc (array-like): Boolean index for significant place cells.
+        newidx (array-like): Index of cells active in all sessions.
+        winlen (int/float): Window length for burst/binning analysis.
+        thr_burts (float): Threshold for burst detection.
+        session_mask (dict): Dictionary mapping session filenames to indices.
+        skel: Skeleton or other parameters required by the linearization function.
+        
+    Returns:
+        data_all_sessions (dict): Dictionary with each session’s processed trial data.
+        spks (list): List of spike data (one element per session).
+    """
+    # Initialize accumulators and counters
+    idtr_f = [0]
+    idtr_c = [0]
+    trial_offset = 0
+    trial_tmp = [0]
+    trial_counter = 0
+    trial_idx_mask_all = [0]
+    trial_idx_mask = []
+    spks = []
+    data_all_sessions = {}
+    global_i0 = 0  # keeps track of the overall time index across sessions
+    total_trial_count = 0
+
+    # Loop over each combination of task, date, and animal folder.
+    for t, current_task in enumerate(task):
+        for date in dates:
+            for fol in folders:
+                # Build filename based on the current task
+                if current_task == 'sleep_learned_after':
+                    # Be cautious: if this is the first task (t == 0) then task[t-1] is invalid.
+                    if t == 0:
+                        print("Warning: 'sleep_learned_after' encountered as first task. Skipping.")
+                        continue
+                    filename = f"{date}_gcamp6f{fol}_{task[t-1]}.mat"
+                else:
+                    filename = f"{date}_gcamp6f{fol}_{current_task}.mat"
+                
+                # Construct the full path and check that it exists
+                file_path = os.path.join(datafolder, fol, filename)
+                if not os.path.exists(file_path):
+                    continue
+                
+                # Build an alternate filename (if needed later)
+                if current_task == 'sleep_learned_after':
+                    alt_filename = f"{date}_gcamp6f{fol}_{current_task}.mat"
+                    alt_filename = alt_filename[:-4] + '_' + signal_type
+                    filenames = [alt_filename]
+                else:
+                    alt_filename = filename[:-4] + '_' + signal_type
+                    filenames = [alt_filename]
+                
+                descriptor = f"No_chunk_{burst_len}_{signal_type}"
+                print(f"Processing: {fol}/{filename} ({current_task})")
+                
+                # Load the data from file
+                data = loadmat(file_path)
+                
+                # --- Preprocess the session signal ---
+                # Deconvolve the raw traces and store them in the data structure.
+                decsig = deconv(data['STMx']['traces'], tau)
+                data['STMx']['deconv'] = decsig
+                
+                # Retrieve metadata and compute sampling frequency.
+                metadata = data['metadata']
+                fs_str = metadata['recordingmethod']['sampling_frequency']
+                fs = float(fs_str[0:2])
+                if fs_str == 'kHz':
+                    fs *= 1000
+
+                # Select cells active in all sessions using the provided index.
+                true_cell_idx3 = np.array(metadata['CellRegCellID'])
+                STMx1 = data['STMx'][signal_type][true_cell_idx3[newidx]]
+                
+                # (This counter can be used for trial numbering)
+                trial_counter = np.max(trial_idx_mask_all) + 1
+                
+                # Select cells based on whether we are analyzing only place cells.
+                if place_cells:
+                    STMx2 = STMx1[significant_pc]
+                    spks.append(STMx1[significant_pc])
+                    ncells = len(STMx2)
+                else:
+                    STMx2 = STMx1
+                    spks.append(STMx1)
+                    ncells = len(newidx)
+                
+                # --- Compute population activity and spike times ---
+                poprate, id_peaks, bursts, seqs = binned_burst(STMx2, winlen, thr_burts, fs, timewins=[])
+                
+                # For each cell, use find_peaks to compute spike times.
+                Spike_times = []
+                for cell_signal in STMx2:
+                    peaks, _ = find_peaks(cell_signal, height=0, width=1, distance=2)
+                    Spike_times.append(peaks)
+                
+                # --- Process location and velocity if not a sleep task ---
+                if 'sleep' not in current_task:
+                    xloc = np.expand_dims(np.array(data['EvtT']['x']), axis=0)
+                    yloc = np.expand_dims(np.array(data['EvtT']['y']), axis=0)
+                    EvtT = np.concatenate((xloc, yloc))
+                    v_all, speed_all, phi_all = velocity(EvtT[0], EvtT[1], fs)
+                
+                # --- Process trial data for task learning sessions ---
+                if current_task in ['task_learned', 'task_learning']:
+                    t_stamps = np.arange(STMx2.shape[1])
+                    xloc = np.expand_dims(np.array(data['EvtT']['x']), axis=0)
+                    yloc = np.expand_dims(np.array(data['EvtT']['y']), axis=0)
+                    EvtT = np.concatenate((xloc, yloc))
+                    v_all, speeds, phi_all = velocity(EvtT[0], EvtT[1], fs)
+                    
+                    # Reshape trial timestamps for correct and failed trials.
+                    selected_corrects = np.array(data['EvtT']['correct_trials'])
+                    correct_trials = selected_corrects.reshape(-1, 2)
+                    selected_false = np.array(data['EvtT']['failed_trials'])
+                    false_trials = selected_false.reshape(-1, 2)
+                    
+                    # Stack all trial indices.
+                    trial_indices = np.vstack((correct_trials, false_trials))
+                    for it, tl in enumerate(trial_indices):
+                        trial_idx_mask.extend(it * np.ones(int(tl[1] - tl[0])))
+                    
+                    tracks = (data['EvtT']['x'], data['EvtT']['y'])
+                    sess_data = {}
+                    
+                    # Update trial offset (if needed for concatenation).
+                    trial_offset += trial_tmp[-1]
+                    Left_trial_number = int(len(data['EvtT']['sampling_L']) / 2)
+                    Right_trial_number = int(len(data['EvtT']['sampling_R']) / 2)
+                    L_R = {'L': Left_trial_number, 'R': Right_trial_number}
+                    
+                    # Define the keys and a template dictionary for storing trial data.
+                    keys = [
+                        'sampling_L', 'sampling_R', 'outward_L',  
+                        'outward_R', 'reward_L', 'reward_R', 
+                        'inward_L', 'inward_R', 
+                        'correct_trials', 'loc'
+                    ]
+                    data_dict_template = {
+                        'trial_data': [],
+                        'pop_rate': [],
+                        'xloc': [],
+                        'yloc': [],
+                        'fr': [],
+                        'seq_mask': [],
+                        'id_peaks': [],
+                        'bursts': [],
+                        'speed': [],
+                        'passid': [],
+                        'lin_pos': [],
+                        'loc': data['EvtT'],
+                        'corr': data['EvtT']['correct_trials'],
+                        'Spike_times_cells': [],
+                        't': [],
+                        'extract': [],
+                        'seqs': [],
+                        'odd_even_mask_seqs': [],
+                        'fr_cell': [],
+                        'correct_trial_idx_mask': [],
+                        'failed_trial_idx_mask': [],
+                        'correct_trial_idx_mask_fr': [],
+                        'correct_trial_idx_mask_burst': [],
+                        'failed_trial_idx_mask_fr': [],
+                        'failed_trial_idx_mask_burst': [],
+                        'trial_idx_mask': [],
+                        'trial_idx_mask2': [],
+                        'trial_numbers': [],
+                        'binary_spike': [],
+                        'binary_spike_cells': [],
+                        'correct_failed_mask': [],
+                        'correct_failed_bursts_mask': [],
+                        'correct_failed_fr_mask': []
+                    }
+                    
+                    # Create a dictionary for each condition key.
+                    main_dict = {key: copy.deepcopy(data_dict_template) for key in keys}
+                    
+                    # Iterate over left and right trial conditions.
+                    for side in L_R:
+                        for trial_index in range(L_R[side]):
+                            # Process each condition within the event structure.
+                            for condition in data['EvtT']:
+                                # Check that the condition name matches the expected format.
+                                if (side in condition) and (
+                                    ('x' not in condition) and 
+                                    ('y' not in condition) and 
+                                    ('correct_trials' not in condition) and 
+                                    ('failed_trials' not in condition) and 
+                                    ('trial_list' not in condition) and 
+                                    ('sampling' not in condition)
+                                    or ('sampling_L' in condition) or ('sampling_R' in condition)
+                                ):
+                                    # Initialize a dictionary for this condition.
+                                    sess_data[condition] = {
+                                        'trial_data': [],
+                                        'pop_rate': [],
+                                        'xloc': [],
+                                        'yloc': [],
+                                        'fr': [],
+                                        'seq_mask': [],
+                                        'id_peaks': [],
+                                        'bursts': [],
+                                        'speed': [],
+                                        'passid': [],
+                                        'lin_pos': [],
+                                        'loc': data['EvtT'],
+                                        'corr': data['EvtT']['correct_trials'],
+                                        'Spike_times_cells': [],
+                                        't': [],
+                                        'extract': [],
+                                        'seqs': [],
+                                        'odd_even_mask_seqs': [],
+                                        'fr_cell': [],
+                                        'correct_trial_idx_mask': [],
+                                        'failed_trial_idx_mask': [],
+                                        'correct_trial_idx_mask_fr': [],
+                                        'correct_trial_idx_mask_burst': [],
+                                        'failed_trial_idx_mask_fr': [],
+                                        'failed_trial_idx_mask_burst': [],
+                                        'trial_idx_mask': [],
+                                        'trial_idx_mask2': [],
+                                        'trial_numbers': []
+                                    }
+                                    
+                                    cond_name = f"{current_task}_{condition}_{date}"
+                                    
+                                    # Reshape the condition’s trial timestamps.
+                                    selected_trials = np.array(data['EvtT'][condition])
+                                    cond_trials = selected_trials.reshape(-1, 2)
+                                    
+                                    # Find correct and failed trial indices for this condition.
+                                    correxindex, idtr_c = find_correct_index(cond_trials, correct_trials)
+                                    falseindex, idtr_f = find_correct_index(cond_trials, false_trials)
+                                    
+                                    Cortr = [(trial, 'correct') for trial in cond_trials[correxindex]]
+                                    Failtr = [(trial, 'failed') for trial in cond_trials[falseindex]]
+                                    if (len(Failtr) > 0) and (len(Cortr) > 0):
+                                        Alltr = np.vstack((Cortr, Failtr))
+                                    elif (len(Failtr) == 0) and (len(Cortr) > 0):
+                                        Alltr = Cortr
+                                    elif (len(Cortr) == 0) and (len(Failtr) > 0):
+                                        Alltr = Failtr
+                                    else:
+                                        continue  # No valid trials in this condition.
+                                    
+                                    trial_info = Alltr[trial_index]
+                                    x_trial = trial_info[0]   # [start, end] indices for this trial
+                                    trial_type = trial_info[1]
+                                    if x_trial[1] > x_trial[0]:
+                                        # (Optional) Find a matching index in the overall trial indices.
+                                        matching_index = None
+                                        for idx, trial_range in enumerate(trial_indices):
+                                            if (x_trial[0] >= trial_range[0]) and (x_trial[1] <= trial_range[1]):
+                                                matching_index = idx + 1
+                                                break
+                                        
+                                        # Create a mask for peaks within the trial window.
+                                        mask = (id_peaks >= x_trial[0]) & (id_peaks < x_trial[1])
+                                        cond_key = condition
+                                        if 'outward' in condition:
+                                            cond_key = f"outward_{side}"
+                                        elif 'inward' in condition:
+                                            cond_key = f"inward_{side}"
+                                        
+                                        # Create a binary spike vector for the population.
+                                        binary_spike = np.zeros(len(poprate[x_trial[0]:x_trial[1]]))
+                                        binary_spike[np.asarray(id_peaks)[mask] - x_trial[0]] = 1
+                                        main_dict[cond_key]['binary_spike'].extend(binary_spike)
+                                        
+                                        # Append the trial data.
+                                        main_dict[cond_key]['trial_data'].append(
+                                            np.array(STMx2[:, x_trial[0]:x_trial[1]])
+                                        )
+                                        main_dict[cond_key]['pop_rate'].extend(poprate[x_trial[0]:x_trial[1]])
+                                        main_dict[cond_key]['xloc'].extend(data['EvtT']['x'][x_trial[0]:x_trial[1]])
+                                        main_dict[cond_key]['yloc'].extend(data['EvtT']['y'][x_trial[0]:x_trial[1]])
+                                        main_dict[cond_key]['fr'].append(np.sum(mask) / (x_trial[1] - x_trial[0]))
+                                        main_dict[cond_key]['seq_mask'].extend(
+                                            session_mask[filename] * np.ones(len(np.asarray(seqs)[mask]))
+                                        )
+                                        main_dict[cond_key]['id_peaks'].extend(
+                                            np.asarray(id_peaks)[mask] - x_trial[0] + global_i0
+                                        )
+                                        main_dict[cond_key]['bursts'].extend(np.asarray(bursts)[mask])
+                                        main_dict[cond_key]['speed'].extend(speeds[x_trial[0]:x_trial[1]])
+                                        main_dict[cond_key]['passid'].append([x_trial[0], x_trial[1]])
+                                        main_dict[cond_key]['t'].extend(t_stamps[x_trial[0]:x_trial[1]] - x_trial[0])
+                                        main_dict[cond_key]['extract'].extend(
+                                            np.transpose(np.array(STMx2[:, x_trial[0]:x_trial[1]]))
+                                        )
+                                        main_dict[cond_key]['seqs'].extend(np.asarray(seqs)[mask])
+                                        main_dict[cond_key]['trial_numbers'].extend(
+                                            trial_index * np.ones(len(poprate[x_trial[0]:x_trial[1]])) + total_trial_count
+                                        )
+                                        
+                                        # Compute binary spike vectors for individual cells.
+                                        cell_spike_binary = np.zeros((len(Spike_times), len(poprate[x_trial[0]:x_trial[1]])))
+                                        for cell_idx, spikes_arr in enumerate(Spike_times):
+                                            mask_n = (np.asarray(spikes_arr) >= x_trial[0]) & (np.asarray(spikes_arr) < x_trial[1])
+                                            cell_spike_binary[cell_idx, np.asarray(spikes_arr)[mask_n] - x_trial[0]] = 1
+                                        main_dict[cond_key]['binary_spike_cells'].extend(
+                                            np.transpose(cell_spike_binary)
+                                        )
+                                        
+                                        # Set masks for correct vs. failed trials.
+                                        if trial_type == 'correct':
+                                            main_dict[cond_key]['correct_failed_mask'].extend(
+                                                np.ones(len(poprate[x_trial[0]:x_trial[1]]))
+                                            )
+                                            main_dict[cond_key]['correct_failed_bursts_mask'].extend(
+                                                np.ones(len(np.asarray(seqs)[mask])).astype(int)
+                                            )
+                                            main_dict[cond_key]['correct_failed_fr_mask'].extend(
+                                                np.ones(1).astype(int)
+                                            )
+                                            main_dict[cond_key]['correct_trial_idx_mask'].extend(
+                                                1 * np.ones(len(poprate[x_trial[0]:x_trial[1]]))
+                                            )
+                                            main_dict[cond_key]['correct_trial_idx_mask_fr'].extend(
+                                                1 * np.ones(len(poprate[x_trial[0]:x_trial[1]]))
+                                            )
+                                            main_dict[cond_key]['correct_trial_idx_mask_burst'].extend(
+                                                1 * np.ones(len(poprate[x_trial[0]:x_trial[1]]))
+                                            )
+                                        elif trial_type == 'failed':
+                                            main_dict[cond_key]['correct_failed_mask'].extend(
+                                                np.zeros(len(poprate[x_trial[0]:x_trial[1]]))
+                                            )
+                                            main_dict[cond_key]['correct_failed_bursts_mask'].extend(
+                                                np.zeros(len(np.asarray(seqs)[mask])).astype(int)
+                                            )
+                                            main_dict[cond_key]['correct_failed_fr_mask'].extend(
+                                                np.zeros(1).astype(int)
+                                            )
+                                            main_dict[cond_key]['failed_trial_idx_mask'].extend(
+                                                0 * np.ones(len(poprate[x_trial[0]:x_trial[1]]))
+                                            )
+                                            main_dict[cond_key]['failed_trial_idx_mask_fr'].extend(
+                                                0 * np.ones(len(poprate[x_trial[0]:x_trial[1]]))
+                                            )
+                                            main_dict[cond_key]['failed_trial_idx_mask_burst'].extend(
+                                                0 * np.ones(len(poprate[x_trial[0]:x_trial[1]]))
+                                            )
+                                        
+                                        # Process spike times for each cell relative to the trial.
+                                        trial_spikes_allcells = []
+                                        for spikes_arr in Spike_times:
+                                            trial_spikes = np.asarray(spikes_arr)[
+                                                (np.asarray(spikes_arr) >= x_trial[0]) &
+                                                (np.asarray(spikes_arr) < x_trial[1])
+                                            ]
+                                            trial_spikes = trial_spikes - x_trial[0] + global_i0 if trial_spikes.size > 0 else trial_spikes
+                                            trial_spikes_allcells.append(trial_spikes)
+                                        main_dict[cond_key]['Spike_times_cells'].append(trial_spikes_allcells)
+                                        
+                                        # Compute linearized position (using your custom function).
+                                        ind1, ind2 = x_trial[0], x_trial[1]
+                                        if condition.split('_')[1] == 'L':
+                                            lin_pos = linearize_2d_track_single_run(tracks, ind1, ind2, skel, is_left=True)
+                                        elif condition.split('_')[1] == 'R':
+                                            lin_pos = linearize_2d_track_single_run(tracks, ind1, ind2, skel, is_left=False)
+                                        else:
+                                            lin_pos = []
+                                        main_dict[cond_key]['lin_pos'].extend(lin_pos)
+                                        
+                                        # Update the global time index offset.
+                                        global_i0 += len(poprate[x_trial[0]:x_trial[1]])
+                            total_trial_count += trial_index
+                        
+                    # Save the processed trial data for this session.
+                    data_all_sessions[filename] = main_dict
+                    data_all_sessions[filename].update({'correct_trials': data['EvtT']['correct_trials']})
+                    loc = (data['EvtT']['x'], data['EvtT']['y'])
+                    data_all_sessions[filename].update({'loc': loc})
+    
+    return data_all_sessions, spks
+
+
+
+
+
+
+
+
+def generate_masks(data_all_sessions, session_mask,  ncells):
+    """
+    Generate masks and aggregate session/condition information for further analysis.
+
+    Parameters:
+        data_all_sessions (dict): Dictionary containing processed session data.
+                                  Each key is a session name and its value is a dict
+                                  with condition keys (e.g. 'sampling_L', 'reward_R', etc.)
+                                  and associated trial/feature data.
+        session_mask (dict): Dictionary mapping session names to unique session indices.
+
+        ncells (int): The number of cells (used to initialize cell‐wise mask lists).
+
+    Returns:
+        Masks (dict): Dictionary containing various mask arrays for conditions, sessions, phases,
+                      bursts, and trial indices.
+        sess_info (dict): Dictionary aggregating session‐level information.
+        cond_info (dict): Dictionary aggregating condition‐level information.
+    """
+    # ----------------------------
+    # Define condition names and codes
+    # ----------------------------
+    conds = [
+        'sampling_L', 'sampling_R',
+        'outward_L', 'outward_R',
+        'reward_L', 'reward_R',
+        'inward_L', 'inward_R'
+    ]
+    cond_number = {cond: idx for idx, cond in enumerate(conds)}
+    # (cond_names is identical to cond_number if needed)
+    cond_names = cond_number
+
+    # ----------------------------
+    # Initialize aggregated dictionaries and lists
+    # ----------------------------
+    # (all_data is not used later, but you might want to keep it for reference.)
+    all_data = {
+        'trial_data': [], 'pop_rate': [], 'xloc': [], 'yloc': [],
+        'fr': [], 'seq_mask': [], 'id_peaks': [], 'bursts': [],
+        'speed': [], 'passid': [], 'lin_pos': [],
+        
+        'Spike_times_cells': [], 't': [], 'extract': [], 'seqs': []
+    }
+    
+    # For condition-wise aggregated info.
+    cond_info = {}
+    
+    # Initialize cell‐wise mask lists (one list per cell)
+    cell_mask_cond    = [[] for _ in range(ncells)]
+    cell_mask_sess    = [[] for _ in range(ncells)]
+    cell_mask_phase   = [[] for _ in range(ncells)]
+    cell_mask_correct = [[] for _ in range(ncells)]
+    
+    # Initialize the Masks dictionary with many fields.
+    Masks = {
+        'conditions': [],
+        'sessions': [],
+        'phases': [],
+        'bursts_cond': [],
+        'bursts_sess': [],
+        'bursts_phase': [],
+        'odd_even': [],
+        'odd_even_seqs': [],
+        'cell_cond': cell_mask_cond,
+        'cell_sess': cell_mask_sess,
+        'cell_phase': cell_mask_phase,
+        'cell_correct': cell_mask_correct,
+        'correct_failed': [],
+        'correct_failed_seqs': [],
+        'correct_failed_fr': [],
+        'fr_phase': [],
+        'fr_cond': [],
+        'fr_sess': [],
+        'odd_even_fr': [],
+        'correct_trial_idx_mask': [0],
+        'failed_trial_idx_mask': [0],
+        'trial_idx_mask': [],
+        'correct_trial_idx_mask_fr': [],
+        'correct_trial_idx_mask_burst': [],
+        'failed_trial_idx_mask_fr': [],
+        'failed_trial_idx_mask_burst': [],
+        'trial_number': [],
+        'Spike_binary_cells': [],
+        'Spike_binary': []
+    }
+    
+    # Features to pool (from each condition) into the session-level info.
+    features = ['pop_rate', 'xloc', 'yloc', 'fr', 'seq_mask', 'speed', 'lin_pos', 'bursts', 'seqs']
+    
+    # Initialize the aggregated session info dictionary.
+    sess_info = {
+        'trial_data': [], 'pop_rate': [], 'xloc': [], 'yloc': [],
+        'fr': [], 'seq_mask': [], 'id_peaks': [], 'bursts': [],
+        'speed': [], 'passid': [], 'lin_pos': [],
+        
+        'Spike_times_cells': [[] for _ in range(ncells)],
+        't': [], 'extract': [], 'seqs': [],
+        'trial_idx_mask': []
+    }
+    
+    # These lists will accumulate binary spike data across sessions.
+    binary_spike_all = []
+    binary_spike_all_cells = []
+    
+    # Initialize a cumulative time offset variable.
+    time_offset = 0
+
+    # ----------------------------
+    # Loop over each session and condition to aggregate data and create masks
+    # ----------------------------
+    for sess_name, sess_data in data_all_sessions.items():
+        # You can also create session-specific arrays if needed:
+        odd_even_mask_sess = []  # (if you use odd-even masks later)
+        sess_trace = []          # (for tracing session signals)
+
+        for condname in conds:
+            # Initialize a fresh dictionary for this condition.
+            cond_info[condname] = {
+                'trial_data': [], 'pop_rate': [], 'xloc': [], 'yloc': [],
+                'fr': [], 'seq_mask': [], 'id_peaks': [], 'bursts': [],
+                'speed': [], 'passid': [], 'lin_pos': [],
+                
+                'Spike_times_cells': [], 't': [], 'extract': [], 'trial_number': []
+            }
+            # (The original code had an if‐statement checking that 'correct_trials'
+            # or 'loc' are not in the condition name; since our conds list does not include
+            # these, we process every condition.)
+            if len(sess_data[condname]['t']) > 0:
+                # t0: the first timestamp in the current condition’s data.
+                t0 = sess_data[condname]['t'][0]
+
+                # Extend condition info with id_peaks and population rate.
+                cond_info[condname]['id_peaks'].extend(sess_data[condname]['id_peaks'])
+                cond_info[condname]['pop_rate'].extend(
+                    np.asarray(sess_data[condname]['pop_rate'])
+                )
+
+                # For each feature, add the pooled data from this condition.
+                for fname in features:
+                    sess_info[fname].extend(sess_data[condname][fname])
+                
+                # Accumulate binary spike data.
+                binary_spike_all.extend(sess_data[condname]['binary_spike'])
+                binary_spike_all_cells.extend(sess_data[condname]['binary_spike_cells'])
+                
+                # Aggregate the 'extract' data. We assume that the extract data is stored
+                # as a matrix that needs to be transposed before concatenation.
+                extract_data = np.array(sess_data[condname]['extract']).T
+                if sess_info['extract'] == []:
+                    sess_info['extract'] = extract_data
+                else:
+                    sess_info['extract'] = np.hstack((sess_info['extract'], extract_data))
+                
+                # Determine the phase indicator from the session name.
+                # (For example, set phi = 0 for 'learning' and phi = 1 for 'learned'.)
+                if 'learning' in sess_name:
+                    phi = 0
+                elif 'learned' in sess_name:
+                    phi = 1
+                else:
+                    phi = np.nan  # or any default value
+                
+                # For each cell, use the binary spike data to extend cell-specific masks.
+                binary_cells = np.array(sess_data[condname]['binary_spike_cells'])
+                # Transpose so that we iterate cell by cell.
+                for i, cell_binary in enumerate(binary_cells.T):
+                    n_spikes = int(np.sum(cell_binary == 1))
+                    Masks['cell_cond'][i].extend(
+                        cond_number[condname] * np.ones(n_spikes)
+                    )
+                    Masks['cell_sess'][i].extend(
+                        session_mask[sess_name] * np.ones(n_spikes)
+                    )
+                    Masks['cell_phase'][i].extend(
+                        phi * np.ones(n_spikes)
+                    )
+                    # Extend the cell's "correct" mask using the condition's correct_failed_mask.
+                    # (Ensure that cell_binary is interpreted as boolean.)
+                    correct_mask = np.asarray(
+                        sess_data[condname]['correct_failed_mask']
+                    )[cell_binary.astype(bool)].astype(bool)
+                    Masks['cell_correct'][i].extend(correct_mask)
+                
+                # Update the cumulative time offset using the current condition's t vector.
+                time_offset += -sess_data[condname]['t'][0] + sess_data[condname]['t'][-1]
+                
+                # Extend Masks with various trial and session-level data.
+                Masks['correct_failed'].extend(sess_data[condname]['correct_failed_mask'])
+                Masks['correct_failed_seqs'].extend(sess_data[condname]['correct_failed_bursts_mask'])
+                Masks['trial_idx_mask'].extend(np.asarray(sess_data[condname]['trial_numbers']))
+                # Adjust the trial index masks by the last value so far.
+                Masks['correct_trial_idx_mask'].extend(
+                    np.asarray(sess_data[condname]['correct_trial_idx_mask']) + Masks['correct_trial_idx_mask'][-1]
+                )
+                Masks['failed_trial_idx_mask'].extend(
+                    np.asarray(sess_data[condname]['failed_trial_idx_mask']) + Masks['failed_trial_idx_mask'][-1]
+                )
+                Masks['correct_failed_fr'].extend(sess_data[condname]['correct_failed_fr_mask'])
+                Masks['fr_phase'].extend(phi * np.ones(len(sess_data[condname]['fr'])))
+                Masks['fr_cond'].extend(
+                    cond_number[condname] * np.ones(len(sess_data[condname]['fr']))
+                )
+                Masks['fr_sess'].extend(
+                    session_mask[sess_name] * np.ones(len(sess_data[condname]['fr']))
+                )
+                Masks['correct_trial_idx_mask_fr'].extend(sess_data[condname]['correct_trial_idx_mask_fr'])
+                Masks['correct_trial_idx_mask_burst'].extend(sess_data[condname]['correct_trial_idx_mask_burst'])
+                Masks['failed_trial_idx_mask_fr'].extend(sess_data[condname]['failed_trial_idx_mask_fr'])
+                Masks['failed_trial_idx_mask_burst'].extend(sess_data[condname]['failed_trial_idx_mask_burst'])
+                Masks['phases'].extend(phi * np.ones(len(sess_data[condname]['pop_rate'])))
+                
+                # Extend burst-related masks.
+                Masks['bursts_cond'].extend(
+                    cond_number[condname] * np.ones(len(sess_data[condname]['bursts']))
+                )
+                Masks['bursts_sess'].extend(
+                    session_mask[sess_name] * np.ones(len(sess_data[condname]['bursts']))
+                )
+                Masks['bursts_phase'].extend(
+                    phi * np.ones(len(sess_data[condname]['bursts']))
+                )
+                
+                # Extend masks for session and condition information.
+                Masks['sessions'].extend(
+                    session_mask[sess_name] * np.ones(len(sess_data[condname]['pop_rate']))
+                )
+                Masks['conditions'].extend(
+                    cond_number[condname] * np.ones(len(sess_data[condname]['pop_rate']))
+                )
+                Masks['trial_number'].extend(
+                    np.asarray(sess_data[condname]['trial_numbers'])
+                )
+    
+    # ----------------------------
+    # Finalize session-level info using the accumulated binary spike data.
+    # ----------------------------
+    sess_info['id_peaks'] = np.where(np.asarray(binary_spike_all))[0]
+    sess_info['trial_idx_mask'] = Masks['trial_idx_mask']
+    sess_info['Spike_times_cells'] = [
+        np.where(arr)[0] for arr in np.array(binary_spike_all_cells).T
+    ]
+    sess_info['Spike_binary_cells'] = np.array(binary_spike_all_cells).T
+    sess_info['Spike_binary'] = binary_spike_all
+    sess_info['t'] = np.arange(len(binary_spike_all_cells))
+    
+    return Masks, sess_info, cond_info
