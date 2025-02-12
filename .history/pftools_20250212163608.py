@@ -7,7 +7,6 @@ from scipy.stats import spearmanr
 import random
 import pandas as pd
 import seaborn as sns
-
 def GetData(data, fs=20, bound=(0, 4847)):
     """
     To
@@ -123,7 +122,8 @@ def MidAx(edges):
 
 
 
-
+plt.rcParams.update({'figure.facecolor': 'w',
+                     'figure.dpi': 300})
 
 
 

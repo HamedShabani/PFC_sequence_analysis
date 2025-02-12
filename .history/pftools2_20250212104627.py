@@ -7,7 +7,8 @@ from scipy.stats import spearmanr
 import random
 import pandas as pd
 import seaborn as sns
-
+plt.rcParams.update({'figure.facecolor': 'w',
+                     'figure.dpi': 300})
 def GetData(data, fs=20, bound=(0, 4847)):
     """
     To
@@ -124,15 +125,6 @@ def MidAx(edges):
 
 
 
-
-
-
-
-
-
-
-
-
 def exclude_idx(input_idxs, mask_idxs):
     """
     For the purpose of excluding data points at the burst events when constructing place fields.
@@ -185,6 +177,84 @@ print('Illustration of the use of these functions\n',
       '\nInput indexes excluding those in the set of mask indexes\n', foo4)
 
 
+def spike_shuffle(data, tspidx, oddeven=None):
+    """
+    Circularly shuffles spike times within each trial.
+
+    This function takes a set of spike time indices and "circularly shuffles" them 
+    on a per-trial basis. For each trial (or a subset of trials specified by the `oddeven`
+    parameter), the function identifies the spike times that fall within the trial, 
+    then performs a circular (or cyclic) shift of these spike times by a random amount.
+    
+    Parameters
+    ----------
+    data : dict
+        A dictionary containing the trial data. It must include the key 'trial_idx_mask',
+        which is an array-like object indicating the trial index for each time point.
+    tspidx : array-like
+        An array or list of spike time indices (e.g., time points where spikes occurred).
+    oddeven : {None, 'odd', 'even'}, optional
+        Determines which trials are processed:
+          - None (default): All trials are processed.
+          - 'odd': Only trials at odd-numbered positions (i.e., the 2nd, 4th, 6th, ...)
+            in the sorted unique trial indices are processed.
+          - 'even': Only trials at even-numbered positions (i.e., the 1st, 3rd, 5th, ...)
+            in the sorted unique trial indices are processed.
+    
+    Returns
+    -------
+    spk_sh : list
+        A list containing the circularly shuffled spike time indices from the processed trials.
+    spk : numpy.ndarray
+        A NumPy array of the original spike time indices that were identified within the processed trials.
+    
+    Notes
+    -----
+    For each trial:
+      1. The function identifies the time points corresponding to that trial using the trial
+         index mask.
+      2. It then extracts the spike times (from `tspidx`) that occur during the trial.
+      3. A boolean mask is created to mark the positions of these spikes within the trial's time points.
+      4. This boolean mask is circularly shifted (rolled) by a random number of positions, effectively
+         shuffling the spike times while preserving the overall distribution.
+      5. The shuffled spike times are then recorded.
+    
+    Example
+    -------
+    >>> import numpy as np
+    >>> # Create dummy data with three trials (each trial having 3 time points)
+    >>> data = {'trial_idx_mask': np.array([0, 0, 0, 1, 1, 1, 2, 2, 2])}
+    >>> tspidx = [0, 2, 4, 7]  # Some example spike indices
+    >>> # Shuffle spikes across all trials
+    >>> spk_shuffled, spk_original = spike_shuffle(data, tspidx)
+    >>> print("Shuffled spike times:", spk_shuffled)
+    >>> print("Original spike times:", spk_original)
+    """
+    import numpy as np
+    import random
+
+    if oddeven == None:
+        unqtrial = np.unique(data['trial_idx_mask'])
+    elif oddeven == 'odd':
+        unqtrial = np.unique(data['trial_idx_mask'])[1::2]
+    elif oddeven == 'even':
+        unqtrial = np.unique(data['trial_idx_mask'])[::2]
+    
+    t_all = np.arange(len(data['trial_idx_mask']))
+    spk_sh = []
+    spk = []
+    for trl in unqtrial:
+        trl_msk = np.asarray(data['trial_idx_mask'] == trl)
+        trl_time = t_all[trl_msk]
+        spike_times = np.asarray(tspidx)[np.isin(tspidx, trl_time)]
+        if len(spike_times) > 0:
+            spk.extend(spike_times)
+        bst = np.isin(trl_time, np.asarray(spike_times))
+        # Circularly shift the boolean mask by a random number of positions
+        spike_times_sh = np.asarray(trl_time)[np.roll(bst, random.randint(1, len(bst) - 1))]
+        if len(spike_times_sh) > 0:
+            spk_sh.extend(spike_times_sh)
+    return spk_sh, np.asarray(spk)
 
 
 def spike_shuffle(data,tspidx,oddeven=None):
@@ -321,10 +391,8 @@ def mean_rate2(all_rates_L,P_x_f,num_neurons):
 
     for nid in range(num_neurons):
         rates_f = all_rates_L[nid, :]
-        # ================================= Exercise starts here ========================================
         # Compute the mean rate r0 here.
         r0_f[nid] =  np.sum(P_x_f * rates_f)
-        # ================================= Exercise ends here ========================================
         pass
 
     return r0_f,

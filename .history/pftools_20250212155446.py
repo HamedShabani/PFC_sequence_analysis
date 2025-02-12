@@ -7,7 +7,8 @@ from scipy.stats import spearmanr
 import random
 import pandas as pd
 import seaborn as sns
-
+plt.rcParams.update({'figure.facecolor': 'w',
+                     'figure.dpi': 300})
 def GetData(data, fs=20, bound=(0, 4847)):
     """
     To
@@ -120,15 +121,6 @@ def MidAx(edges):
     [-0.5, 0.5, 1.5, 2.5] --> [0.0, 1.0, 2.0]
     """
     return (edges[:-1] + edges[1:]) / 2
-
-
-
-
-
-
-
-
-
 
 
 
@@ -963,7 +955,7 @@ def significant_pc_to_tc_2(Rates,Rates_sh,TC_learned,PC_learning,PC_learned,anim
 
 
 
-    if 1:
+    if 0:
         significant_TC_stbl_L=(significants_L ) & pc_to_tc_learned# PC cells that are signficantly stable after learning and are TC in learned
 
             # Create figure and axes

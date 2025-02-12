@@ -7,7 +7,8 @@ from scipy.stats import spearmanr
 import random
 import pandas as pd
 import seaborn as sns
-
+plt.rcParams.update({'figure.facecolor': 'w',
+                     'figure.dpi': 300})
 def GetData(data, fs=20, bound=(0, 4847)):
     """
     To
@@ -120,15 +121,6 @@ def MidAx(edges):
     [-0.5, 0.5, 1.5, 2.5] --> [0.0, 1.0, 2.0]
     """
     return (edges[:-1] + edges[1:]) / 2
-
-
-
-
-
-
-
-
-
 
 
 
@@ -963,7 +955,7 @@ def significant_pc_to_tc_2(Rates,Rates_sh,TC_learned,PC_learning,PC_learned,anim
 
 
 
-    if 1:
+    if 0:
         significant_TC_stbl_L=(significants_L ) & pc_to_tc_learned# PC cells that are signficantly stable after learning and are TC in learned
 
             # Create figure and axes
@@ -1388,50 +1380,131 @@ def plot_kl_distributions_ss2(js_divergence_ss, p_value_corr_js_, name, type='Co
 
 
 
-def shuffling_rates2(cluster_pc_fractions_L,cluster_pc_fractions_R,sig_sort_idx_l):
-    # Sort rate maps of left runs and shuffle right runs
+# def shuffling_rates2(cluster_pc_fractions_L,cluster_pc_fractions_R,sig_sort_idx_l):
+#     # Sort rate maps of left runs and shuffle right runs
 
 
-    # left_runs=rate_L_R[animal_name+'_L']['rate_all'][rate_L_R[animal_name+'_L']['significant']]# Left as reference
-    # right_runs=rate_L_R[animal_name+'_R']['rate_all'][rate_L_R[animal_name+'_L']['significant']]# Left as reference
+#     # left_runs=rate_L_R[animal_name+'_L']['rate_all'][rate_L_R[animal_name+'_L']['significant']]# Left as reference
+#     # right_runs=rate_L_R[animal_name+'_R']['rate_all'][rate_L_R[animal_name+'_L']['significant']]# Left as reference
 
-    left_runs=cluster_pc_fractions_L['rate_all']#[cluster_pc_fractions_L['significant']]# dir as reference
-    right_runs=cluster_pc_fractions_R['rate_all']#[cluster_pc_fractions_L['significant']]# dir as reference
-    #sig_sort_idx_l=np.argsort(np.argmax(left_runs,axis=1))
-    #sig_sort_idx_r=np.argsort(np.argmax(right_runs,axis=1))
-
-
-    correlation_l_r,correlation_l_r_stem,similarity_between_l_and_r_all,mask_cut= compute_corrleation(left_runs[sig_sort_idx_l],right_runs[sig_sort_idx_l])
+#     left_runs=cluster_pc_fractions_L['rate_all']#[cluster_pc_fractions_L['significant']]# dir as reference
+#     right_runs=cluster_pc_fractions_R['rate_all']#[cluster_pc_fractions_L['significant']]# dir as reference
+#     #sig_sort_idx_l=np.argsort(np.argmax(left_runs,axis=1))
+#     #sig_sort_idx_r=np.argsort(np.argmax(right_runs,axis=1))
 
 
-
+#     correlation_l_r,correlation_l_r_stem,similarity_between_l_and_r_all,mask_cut= compute_corrleation(left_runs[sig_sort_idx_l],right_runs[sig_sort_idx_l])
 
 
 
-    similarity_shuffled_cells=[]# compute the similarity for shuffled data
-    for itr in range(len(cluster_pc_fractions_L['rate_all_shuffled'])):
+
+
+
+#     similarity_shuffled_cells=[]# compute the similarity for shuffled data
+#     for itr in range(len(cluster_pc_fractions_L['rate_all_shuffled'])):
         
-        sorted_r_sh=np.asarray(cluster_pc_fractions_R['rate_all_shuffled'][itr][sig_sort_idx_l])
-        correlation_l_r,correlation_l_r_stem,similarity_between_l_and_r_all_sh,mask_cut= compute_corrleation(left_runs[sig_sort_idx_l],sorted_r_sh)
+#         sorted_r_sh=np.asarray(cluster_pc_fractions_R['rate_all_shuffled'][itr][sig_sort_idx_l])
+#         correlation_l_r,correlation_l_r_stem,similarity_between_l_and_r_all_sh,mask_cut= compute_corrleation(left_runs[sig_sort_idx_l],sorted_r_sh)
 
 
 
 
+#         similarity_shuffled_cells.append(similarity_between_l_and_r_all_sh)
+
+#     binary_mat=(np.asarray(similarity_shuffled_cells)<similarity_between_l_and_r_all)# compare similarity of original data with shuffled data
+
+#     reshaped_data = []
+#     num_shuffles=len(binary_mat)
+#     p_val_cells=np.zeros(len(binary_mat[0]))
+#     # Loop over each cell
+#     for cell in range(len(binary_mat[0])):
+#         # Extract the data for the current cell across all trials
+#         cell_data = [binary_mat[trial][cell] for trial in range(num_shuffles)]
+#         p_val_cells[cell]= 1-np.sum(cell_data)/num_shuffles# p-values of cells with significant similarity between left and right runs
+#         reshaped_data.append(cell_data)
+
+#     return p_val_cells,mask_cut
+def shuffling_rates2(cluster_pc_fractions_L, cluster_pc_fractions_R, sig_sort_idx_l):
+    """
+    Compute p-values for cell rate map similarity by comparing actual correlations with those computed on shuffled data.
+
+    This function computes the similarity between left and right rate maps for a set of cells using the left-run rate maps
+    as the reference. It first calculates the original similarity (via an external function `compute_corrleation`) between the sorted 
+    left and right rate maps. Then, for each shuffled instance of the right rate maps (provided in cluster_pc_fractions_R['rate_all_shuffled']),
+    it computes the similarity with the left rate maps (using the same sorted indices). A binary matrix is formed by comparing, 
+    for each cell, whether the shuffled similarity is lower than the original similarity. Finally, the p-value for each cell is 
+    computed as 1 minus the fraction of shuffles for which the shuffled similarity was lower than the original similarity.
+
+    Parameters
+    ----------
+    cluster_pc_fractions_L : dict
+        Dictionary containing rate map data for the left run. Expected keys include:
+          - 'rate_all': A 2D NumPy array of rate maps (cells × spatial bins).
+          - 'rate_all_shuffled': A list or array of shuffled rate maps corresponding to the left run data.
+    cluster_pc_fractions_R : dict
+        Dictionary containing rate map data for the right run. Expected keys include:
+          - 'rate_all': A 2D NumPy array of rate maps (cells × spatial bins).
+          - 'rate_all_shuffled': A list or array of shuffled rate maps corresponding to the right run data.
+    sig_sort_idx_l : array-like
+        Array of indices used to sort the rate maps. This sorting is applied to both left and right rate maps.
+
+    Returns
+    -------
+    p_val_cells : ndarray
+        A 1D NumPy array containing the p-values for each cell. The p-value for a cell is computed as:
+            1 - (number of shuffles with similarity lower than the original similarity) / (total number of shuffles)
+    mask_cut : ndarray
+        A mask (or boolean array) returned by `compute_corrleation` that indicates a threshold or selection criteria used 
+        during the similarity computation.
+
+    Notes
+    -----
+    - This function depends on an external function `compute_corrleation`, which is expected to compute Pearson correlation 
+      coefficients between two sets of rate maps and return multiple outputs including a similarity measure and a mask.
+    - The original similarity is computed from the left and right rate maps (sorted by `sig_sort_idx_l`), and the similarity 
+      for each shuffled instance is computed similarly.
+    - A binary matrix is created by comparing each cell’s shuffled similarity with its original similarity.
+    - P-values for each cell are calculated based on the fraction of shuffles in which the shuffled similarity is lower than 
+      the original similarity.
+
+    Example
+    -------
+    >>> p_val_cells, mask_cut = shuffling_rates2(cluster_pc_fractions_L, cluster_pc_fractions_R, sig_sort_idx_l)
+    >>> # p_val_cells now contains the p-values for each cell, and mask_cut is returned by compute_corrleation.
+    """
+    import numpy as np
+
+    # Use the provided left and right rate maps as the reference data.
+    left_runs = cluster_pc_fractions_L['rate_all']
+    right_runs = cluster_pc_fractions_R['rate_all']
+
+    # Compute original similarity between left and right rate maps for the sorted indices.
+    correlation_l_r, correlation_l_r_stem, similarity_between_l_and_r_all, mask_cut = \
+        compute_corrleation(left_runs[sig_sort_idx_l], right_runs[sig_sort_idx_l])
+
+    # Compute similarity for each shuffled version of the right rate maps.
+    similarity_shuffled_cells = []
+    for itr in range(len(cluster_pc_fractions_L['rate_all_shuffled'])):
+        # Sort the shuffled right run rate map with the same sorting indices.
+        sorted_r_sh = np.asarray(cluster_pc_fractions_R['rate_all_shuffled'][itr][sig_sort_idx_l])
+        # Compute similarity between the left run (sorted) and the shuffled right run.
+        _, _, similarity_between_l_and_r_all_sh, mask_cut = \
+            compute_corrleation(left_runs[sig_sort_idx_l], sorted_r_sh)
         similarity_shuffled_cells.append(similarity_between_l_and_r_all_sh)
 
-    binary_mat=(np.asarray(similarity_shuffled_cells)<similarity_between_l_and_r_all)# compare similarity of original data with shuffled data
+    # Create a binary matrix comparing shuffled similarities to the original similarity.
+    binary_mat = (np.asarray(similarity_shuffled_cells) < similarity_between_l_and_r_all)
 
-    reshaped_data = []
-    num_shuffles=len(binary_mat)
-    p_val_cells=np.zeros(len(binary_mat[0]))
-    # Loop over each cell
+    # Compute p-values for each cell.
+    num_shuffles = len(binary_mat)
+    p_val_cells = np.zeros(len(binary_mat[0]))
     for cell in range(len(binary_mat[0])):
-        # Extract the data for the current cell across all trials
+        # Extract similarity comparisons for the current cell across all shuffles.
         cell_data = [binary_mat[trial][cell] for trial in range(num_shuffles)]
-        p_val_cells[cell]= 1-np.sum(cell_data)/num_shuffles# p-values of cells with significant similarity between left and right runs
-        reshaped_data.append(cell_data)
+        # Compute p-value: fraction of shuffles where the shuffled similarity is not lower than the original.
+        p_val_cells[cell] = 1 - np.sum(cell_data) / num_shuffles
 
-    return p_val_cells,mask_cut
+    return p_val_cells, mask_cut
 
 
 

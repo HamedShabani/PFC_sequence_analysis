@@ -7,7 +7,8 @@ from scipy.stats import spearmanr
 import random
 import pandas as pd
 import seaborn as sns
-
+plt.rcParams.update({'figure.facecolor': 'w',
+                     'figure.dpi': 300})
 def GetData(data, fs=20, bound=(0, 4847)):
     """
     To
@@ -124,15 +125,6 @@ def MidAx(edges):
 
 
 
-
-
-
-
-
-
-
-
-
 def exclude_idx(input_idxs, mask_idxs):
     """
     For the purpose of excluding data points at the burst events when constructing place fields.
@@ -183,6 +175,7 @@ print('Illustration of the use of these functions\n',
       '\nMask indexes expanded to its 2 neighbours: \n', foo2, 
       '\nInput indexes (array indexes of the positions y or spike positions ysp)\n', foo3, 
       '\nInput indexes excluding those in the set of mask indexes\n', foo4)
+
 
 
 
