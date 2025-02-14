@@ -1,0 +1,55 @@
+# Establishment of Task Representation and Task Replay in the Medial Prefrontal Cortex
+
+This repository contains code and analysis used in the study:
+
+**Establishment of Task Representation and Task Replay in the Medial Prefrontal Cortex**  
+_Hamed Shabani (1), Hannah Muysers (2), Yuk-Hoi Yiu (1,3,4), Marlene Bartos (1,2,3), Jonas Sauer (2), Christian Leibold* (1,3,4)_
+
+📄 [Read the Paper](https://www.)
+
+---
+
+## 📌 Overview
+
+This repository provides Python scripts and Jupyter notebooks for:
+- **Loading and preprocessing** calcium imaging data.
+- **Detecting and extracting** neural burst sequences.
+- **Clustering sequences** and generating representative templates.
+- **Analyzing and visualizing** the replay of task representations in the medial prefrontal cortex.
+
+---
+
+## 📁 Repository Structure
+
+### 📝 Notebooks
+
+| Notebook Name | Description |
+|--------------|-------------|
+| **Read_and_cluster.ipynb** | This is the first script to run. It loads calcium traces and detects and clusters the sequences. |
+| **Get_clustered_seq.ipynb** | This script provides data for "Replay analysis." It loads clustered sequences (results of "Read_and_cluster.ipynb") and merges data of sampling, outward, reward for use in "Replay_analysis". |
+| **Subsampling.ipynb** | Subsamples from sequences of learned data (equalized to learning) and redoes clustering for each session. |
+| **Replay_analysis.ipynb** | This notebook loads data from "Get_clustered_seq.ipynb" and performs replay analysis. The output of this script will be used by "Replay_vis". |
+| **Replay_vis.ipynb** | This notebook visualizes the results of "Replay_analysis.ipynb". |
+| **Place_code_analysis.ipynb** | This notebook finds significant place cells/clusters. The output will be used by "Cluster_vis.ipynb" and "Cell_vis.ipynb" for visualization. |
+| **Cluster_vis.ipynb** | Visualization for SI clusters. |
+| **Cell_vis.ipynb** | Visualization for SI cells. |
+| **Estimate_place_code_error.ipynb** | This notebook estimates the error of a Bayesian decoder. (Figure 1) |
+| **Read_and_Cluster_sleep_and_arena.ipynb** | To exclusively save data of sleep, arena, or all data. |
+
+---
+
+### 📌 Functions
+
+| Script Name | Description |
+|------------|-------------|
+| **mtools.py** | Functions for `motiv` analysis. |
+| **pftools.py** | Functions for place cell and cluster analysis. |
+
+---
+
+## 🚀 How to Use This Repository
+
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/HamedShabani/TP7_public.git
+cd TP7_public
