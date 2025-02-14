@@ -33,189 +33,543 @@ def extract_seq(times):
     stimes=np.sort(times)
     ids=np.argsort(times)
     return ids[np.where(~np.isnan(stimes))[0]], ids
+
+
+
     
-def rankseq(s1,s2):
+# def rankseq(s1,s2):
 
-    #compute rank order correlation between sequences
+#     #compute rank order correlation between sequences
 
-    # set things straight
-    s1=np.array(s1).flatten()
-    s2=np.array(s2).flatten()
-    l1=len(s1)
-    l2=len(s2)
+#     # set things straight
+#     s1=np.array(s1).flatten()
+#     s2=np.array(s2).flatten()
+#     l1=len(s1)
+#     l2=len(s2)
     
-    #difference matrix
-    d=np.ones((l1,1))*s2 - (np.ones((l2,1))*s1).transpose()
+#     #difference matrix
+#     d=np.ones((l1,1))*s2 - (np.ones((l2,1))*s1).transpose()
   
-    # binary identity matrix
-    d=(d==0)
+#     # binary identity matrix
+#     d=(d==0)
   
 
-    # make s0 the shorter sequence
-    s=s1
-    s0=s2
-    l0=l2
-    ln=l1
-    if l1<l2:
-        s=s2;
-        s0=s1;
-        l0=l1
-        ln=l2
-        d=d.transpose()
+#     # make s0 the shorter sequence
+#     s=s1
+#     s0=s2
+#     l0=l2
+#     ln=l1
+#     if l1<l2:
+#         s=s2;
+#         s0=s1;
+#         l0=l1
+#         ln=l2
+#         d=d.transpose()
 
 
  
         
-    #compute cell overlap (neurons contained in both)
-    minseq=s[np.where(np.sum(d,axis=1)>0)[0]];
-    lm=len(minseq)
+#     #compute cell overlap (neurons contained in both)
+#     minseq=s[np.where(np.sum(d,axis=1)>0)[0]];
+#     lm=len(minseq)
   
-    # delete neurons from the shorter sequence that are not in the minimal
-    # sequence
-    #
+#     # delete neurons from the shorter sequence that are not in the minimal
+#     # sequence
+#     #
     
-    d0=np.ones((l0,1))*minseq - (np.ones((lm,1))*s0).transpose()
-    d0=(d0==0)
-    s0=s0[np.sum(d0,axis=1)>0]
-    l0=len(s0)
+#     d0=np.ones((l0,1))*minseq - (np.ones((lm,1))*s0).transpose()
+#     d0=(d0==0)
+#     s0=s0[np.sum(d0,axis=1)>0]
+#     l0=len(s0)
   
   
-    #find ordinal rank in the shorter sequence
-    dd=np.ones((lm,1))*s0 - (np.ones((l0,1))*minseq).transpose()
+#     #find ordinal rank in the shorter sequence
+#     dd=np.ones((lm,1))*s0 - (np.ones((l0,1))*minseq).transpose()
   
-    #compute spearmans r
-    if len(dd)>1:
-        ids=np.argmin(np.abs(dd),axis=0)
+#     #compute spearmans r
+#     if len(dd)>1:
+#         ids=np.argmin(np.abs(dd),axis=0)
         
-        rc = np.corrcoef(np.arange(len(ids)),ids)[0,1]
-        ln=len(ids)
-    else:
-        rc=np.nan;
-        ln=np.nan
+#         rc = np.corrcoef(np.arange(len(ids)),ids)[0,1]
+#         ln=len(ids)
+#     else:
+#         rc=np.nan;
+#         ln=np.nan
   
    
+    
+#     return rc, ln
+
+
+
+# def shuffle(narr):
+
+#     nrep=10000
+    
+#     ret=[]
+#     for n in narr:
+
+#         s2=np.arange(n)
+
+#         rval=np.zeros(nrep)
+#         for m in range(nrep):
+
+#             s1=np.random.permutation(n)
+
+#             rval[m],dummy=rankseq(s1,s2)
+
+#         c=np.mean(rval)
+#         sd=np.std(rval)
+#         prctl=np.quantile(rval,.95)
+        
+#         ret.append([n, c, sd, prctl])
+
+#     return ret
+
+    
+# def allmot(seqs,nrm):
+
+#     nseqs=len(seqs)
+
+#     narr=np.array(nrm)[:,0]
+
+#     corrmat=np.zeros((nseqs,nseqs))
+#     zmat=np.zeros((nseqs,nseqs))
+#     bmat=np.zeros((nseqs,nseqs))
+#     pval=np.zeros(nseqs)
+#     nsig=np.zeros(nseqs)
+    
+#     for ns in range(nseqs):
+
+#         s1=seqs[ns]
+
+#         zmat[ns,ns]=np.nan
+#         bmat[ns,ns]=np.nan
+#         for ms in range(ns+1,nseqs):
+
+            
+
+#             s2=seqs[ms]
+
+#             rc,ln=rankseq(s1,s2)
+            
+
+#             if ln>=50:
+#                 mns=nrm[-1]
+#             else:
+#                 whichone=np.array(np.where(ln==narr)).flatten()
+#                 if len(whichone)==0:
+#                     mns=np.empty(4)
+#                     mns[:]=np.nan
+#                 else:
+#                     mns=nrm[whichone[0]]
+                    
+                    
+#             ztmp=(rc-mns[1])/mns[2]
+#             #print(ns,mns,ztmp)
+#             corrmat[ns,ms]=rc
+#             corrmat[ms,ns]=rc
+
+#             zmat[ns,ms]=ztmp
+#             zmat[ms,ns]=ztmp
+#             bmat[ns,ms]=1.*(ztmp>mns[3])
+#             bmat[ms,ns]=1.*(ztmp>mns[3])
+
+#         nsig[ns] = np.nansum(bmat[ns,:])
+#         pval[ns] = 1-binom.cdf(nsig[ns],nseqs-1,.05)
+
+
+#     rep_index = nsig/np.std(nsig)
+
+
+#     return rep_index, nsig, pval, bmat, zmat, corrmat
+import numpy as np
+
+def rankseq(s1, s2):
+    """
+    Compute the Spearman rank order correlation coefficient between two sequences.
+
+    This function calculates the rank order correlation between two sequences, `s1` and `s2`,
+    by first determining the overlap between their elements (interpreted as neurons) and then
+    computing the Spearman correlation between the ordinal positions of the overlapping elements.
+    If one sequence is shorter than the other, it is used as the reference for ranking.
+
+    Parameters
+    ----------
+    s1 : array_like
+        First input sequence (e.g., a list or 1D numpy array).
+    s2 : array_like
+        Second input sequence (e.g., a list or 1D numpy array).
+
+    Returns
+    -------
+    rc : float
+        Spearman rank correlation coefficient between the two sequences. Returns NaN if the
+        correlation cannot be computed (e.g., due to insufficient overlapping elements).
+    ln : int or float
+        The number of overlapping elements (neurons) used in the correlation computation.
+        Returns NaN if the correlation is not computed.
+    """
+    # Ensure the sequences are flattened numpy arrays.
+    s1 = np.array(s1).flatten()
+    s2 = np.array(s2).flatten()
+    l1 = len(s1)
+    l2 = len(s2)
+    
+    # Create a difference matrix where each element compares an element from s1 to an element from s2.
+    d = np.ones((l1, 1)) * s2 - (np.ones((l2, 1)) * s1).transpose()
+    # Convert the difference matrix to a binary identity matrix (True where elements are equal).
+    d = (d == 0)
+    
+    # Choose the longer sequence as 's' and the shorter as 's0'. Adjust the difference matrix accordingly.
+    s = s1
+    s0 = s2
+    ln = l1
+    if l1 < l2:
+        s = s2
+        s0 = s1
+        ln = l2
+        d = d.transpose()
+        
+    # Identify overlapping elements (neurons present in both sequences).
+    minseq = s[np.where(np.sum(d, axis=1) > 0)[0]]
+    
+    # Remove elements from the shorter sequence that are not in the overlapping set.
+    d0 = np.ones((len(s0), 1)) * minseq - (np.ones((len(minseq), 1)) * s0).transpose()
+    d0 = (d0 == 0)
+    s0 = s0[np.sum(d0, axis=1) > 0]
+    
+    # Prepare a matrix to determine ordinal ranking differences.
+    dd = np.ones((len(minseq), 1)) * s0 - (np.ones((len(s0), 1)) * minseq).transpose()
+    
+    # Compute Spearman's rank correlation coefficient if there is more than one overlapping element.
+    if len(dd) > 1:
+        ids = np.argmin(np.abs(dd), axis=0)
+        rc = np.corrcoef(np.arange(len(ids)), ids)[0, 1]
+        ln = len(ids)
+    else:
+        rc = np.nan
+        ln = np.nan
     
     return rc, ln
 
 
-
 def shuffle(narr):
+    """
+    Compute statistics of Spearman rank correlations for randomly shuffled sequences.
 
-    nrep=10000
-    
-    ret=[]
+    For each integer `n` in the input array `narr`, this function generates 10,000 random
+    permutations of the sequence [0, 1, ..., n-1] and computes the Spearman rank correlation
+    with the sorted sequence using the `rankseq` function. It then calculates the mean, standard
+    deviation, and 95th percentile of these correlation coefficients.
+
+    Parameters
+    ----------
+    narr : array_like
+        An array or list of integers. Each integer represents the length of a sequence to be
+        shuffled and analyzed.
+
+    Returns
+    -------
+    ret : list of lists
+        A list where each sublist corresponds to an input `n` and has the format:
+        [n, mean_correlation, std_correlation, correlation_95th_percentile].
+    """
+    nrep = 10000  # Number of repetitions for the shuffling procedure.
+    ret = []
     for n in narr:
-
-        s2=np.arange(n)
-
-        rval=np.zeros(nrep)
+        s2 = np.arange(n)  # Create a sorted sequence of length n.
+        rval = np.zeros(nrep)
         for m in range(nrep):
-
-            s1=np.random.permutation(n)
-
-            rval[m],dummy=rankseq(s1,s2)
-
-        c=np.mean(rval)
-        sd=np.std(rval)
-        prctl=np.quantile(rval,.95)
-        
+            s1 = np.random.permutation(n)  # Generate a random permutation.
+            rval[m], _ = rankseq(s1, s2)     # Compute rank correlation with the sorted sequence.
+        c = np.mean(rval)
+        sd = np.std(rval)
+        prctl = np.quantile(rval, 0.95)
         ret.append([n, c, sd, prctl])
-
     return ret
 
-    
-def allmot(seqs,nrm):
-
-    nseqs=len(seqs)
-
-    narr=np.array(nrm)[:,0]
-
-    corrmat=np.zeros((nseqs,nseqs))
-    zmat=np.zeros((nseqs,nseqs))
-    bmat=np.zeros((nseqs,nseqs))
-    pval=np.zeros(nseqs)
-    nsig=np.zeros(nseqs)
-    
-    for ns in range(nseqs):
-
-        s1=seqs[ns]
-
-        zmat[ns,ns]=np.nan
-        bmat[ns,ns]=np.nan
-        for ms in range(ns+1,nseqs):
-
-            
-
-            s2=seqs[ms]
-
-            rc,ln=rankseq(s1,s2)
-            
-
-            if ln>=50:
-                mns=nrm[-1]
-            else:
-                whichone=np.array(np.where(ln==narr)).flatten()
-                if len(whichone)==0:
-                    mns=np.empty(4)
-                    mns[:]=np.nan
-                else:
-                    mns=nrm[whichone[0]]
-                    
-                    
-            ztmp=(rc-mns[1])/mns[2]
-            #print(ns,mns,ztmp)
-            corrmat[ns,ms]=rc
-            corrmat[ms,ns]=rc
-
-            zmat[ns,ms]=ztmp
-            zmat[ms,ns]=ztmp
-            bmat[ns,ms]=1.*(ztmp>mns[3])
-            bmat[ms,ns]=1.*(ztmp>mns[3])
-
-        nsig[ns] = np.nansum(bmat[ns,:])
-        pval[ns] = 1-binom.cdf(nsig[ns],nseqs-1,.05)# i will change pvalue from .05 to 0.01 for merging(hamed 02.02.2023)
 
 
-    rep_index = nsig/np.std(nsig)
+# def check_template(seqs,tmpl,nrm):
 
+#     nseqs=len(seqs)
+#     s1=np.array(tmpl).flatten()
 
-    return rep_index, nsig, pval, bmat, zmat, corrmat
-
-
-def check_template(seqs,tmpl,nrm):
-
-    nseqs=len(seqs)
-    s1=np.array(tmpl).flatten()
-
-    narr=np.array(nrm)[:,0]    
-    sig=np.zeros(nseqs)
-    zval=np.zeros(nseqs)
+#     narr=np.array(nrm)[:,0]    
+#     sig=np.zeros(nseqs)
+#     zval=np.zeros(nseqs)
         
-    for ns in range(nseqs):
+#     for ns in range(nseqs):
     
-        s2=seqs[ns]
-        rc,ln=rankseq(s1,s2)
-        #print(rc,ln)
+#         s2=seqs[ns]
+#         rc,ln=rankseq(s1,s2)
+#         #print(rc,ln)
         
-        if ln>=50:
-            mns=nrm[-1]
+#         if ln>=50:
+#             mns=nrm[-1]
+#         else:
+#             whichone=np.array(np.where(ln==narr)).flatten()
+#             if len(whichone)==0:
+#                 mns=np.empty(4)
+#                 mns[:]=np.nan
+#             else:
+#                 mns=nrm[whichone[0]]
+
+
+#         ztmp=(rc-mns[1])/mns[2]
+#         sig[ns]=1.*(ztmp>mns[3])
+#         zval[ns]=ztmp
+
+
+#     return zval,sig
+
+
+import numpy as np
+
+def templates(bursts, seqs, nrm, ids_clust, min_ratio=2):
+    """
+    Generate templates for neural burst sequences based on clustering and quality criteria.
+
+    This function computes a template sequence for each cluster of bursts. For each cluster, 
+    it calculates a representative sequence (template) using either the mean (for 2D burst data) 
+    or an averaged sequence (for 3D burst data). The template is then evaluated with the 
+    `check_template` function to compute a quality metric (radius). Finally, clusters whose 
+    quality ratio (within-cluster / across-cluster correlation) is below `min_ratio` are excluded.
+
+    Parameters
+    ----------
+    bursts : array_like
+        A 2D or 3D array of burst sequences. If 2D, each row represents a burst; if 3D, bursts 
+        may include additional dimensions (e.g., time bins x neurons).
+    seqs : list or array_like
+        A list of individual sequences (e.g., neuron spike orderings) corresponding to the bursts.
+    nrm : array_like
+        An array containing normalization parameters (e.g., mean, standard deviation, and threshold)
+        used for z-score computation in template quality checking.
+    ids_clust : array_like
+        An array of cluster IDs assigning each burst (or sequence) to a specific cluster.
+    min_ratio : float, optional
+        The minimum ratio (within-cluster / across-cluster correlation) required for a cluster's 
+        template to be accepted. Clusters with a lower ratio are excluded (default is 2).
+
+    Returns
+    -------
+    retval : dict
+        Dictionary containing:
+            - 'adj': List of adjustment (significance) values for each accepted cluster.
+            - 'template': List of accepted template sequences.
+            - 'clist': List of indices for bursts belonging to each accepted cluster.
+            - 'radius': List of radius values (quality measure) for each accepted template.
+            - 'seqs': Original input sequences (for reference).
+            - 'ids_clust': Original cluster IDs (for reference).
+            - 'bursts': Original burst data (for reference).
+            - 'ratio': List of computed quality ratios for each cluster.
+            - 'exclude': List of cluster indices that were excluded based on the quality ratio.
+    """
+    # Initialize the return dictionary with placeholders.
+    retval = {
+        'adj': [],
+        'template': [],
+        'clist': [],
+        'radius': [],
+        'seqs': [],
+        'ids_clust': [],
+        'bursts': [],
+        'ratio': []
+    }
+    
+    # Save the original input data for reference.
+    retval['seqs'].append(seqs)         # Added by Hamed
+    retval['ids_clust'].append(ids_clust) # Added by Hamed
+    retval['bursts'].append(bursts)       # Added by Hamed
+
+    # Process each cluster based on its identifier.
+    for nc in range(max(ids_clust) + 1):
+        # Find the indices of bursts belonging to the current cluster.
+        clist = np.where(ids_clust == nc)[0]
+        
+        # Determine the template based on the dimensionality of the bursts data.
+        if np.array(bursts).ndim == 2:
+            # For 2D data: compute the mean burst across the cluster, then sort.
+            mns = np.nanmean(np.array(bursts)[clist, :], axis=0)
+            tmp = np.argsort(mns)
+            # Remove any indices corresponding to NaN values.
+            temp = tmp[~np.isnan(np.sort(mns))]
+        elif np.array(bursts).ndim == 3:
+            # For 3D data: compute an average sequence using the helper function.
+            temp, _ = average_sequence(np.array(bursts)[clist, :, :])
         else:
-            whichone=np.array(np.where(ln==narr)).flatten()
-            if len(whichone)==0:
-                mns=np.empty(4)
-                mns[:]=np.nan
+            raise ValueError("Unsupported burst data dimensionality.")
+            
+        # Check the template quality against the provided sequences using normalization parameters.
+        chck = check_template(seqs, temp, nrm)
+        # Define the template's "radius" as the mean significance flag scaled by 30.
+        radius = np.mean(chck[1]) * 30
+        
+        # Store the computed template and related metrics.
+        retval['template'].append(temp)
+        retval['clist'].append(clist)
+        retval['radius'].append(radius)
+        retval['adj'].append(chck[1])
+
+    # Evaluate the quality of each cluster template using within- and across-cluster measures.
+    crit = within_across(retval['adj'], ids_clust)
+    retval.update({'exclude': []})
+    
+    # Compute a quality ratio for each cluster and mark clusters for exclusion if they do not meet the threshold.
+    for nc in range(len(retval['radius'])):
+        ratio = crit['within'][nc] / crit['across'][nc]
+        retval['ratio'].append(ratio)
+        if ratio < min_ratio:
+            retval['exclude'].append(nc)
+                               
+    # Remove clusters that failed to meet the quality threshold.
+    retval['template'] = [i for j, i in enumerate(retval['template']) if j not in retval['exclude']]
+    retval['clist'] = [i for j, i in enumerate(retval['clist']) if j not in retval['exclude']]
+    retval['radius'] = [i for j, i in enumerate(retval['radius']) if j not in retval['exclude']]
+    retval['adj'] = [i for j, i in enumerate(retval['adj']) if j not in retval['exclude']]
+    # Optionally, similar filtering can be applied to 'ratio' and 'ids_clust' if desired.
+
+    return retval
+
+
+def check_template(seqs, tmpl, nrm):
+    """
+    Evaluate a template against a set of sequences using rank correlation and compute z-scores.
+
+    For each sequence in `seqs`, this function calculates the Spearman rank order correlation 
+    with the template `tmpl` (using the previously defined `rankseq` function). Based on the 
+    overlap length between the template and each sequence, appropriate normalization parameters 
+    are selected from `nrm`. A z-score is then computed, and a binary significance flag is set 
+    if the z-score exceeds a threshold.
+
+    Parameters
+    ----------
+    seqs : list or array_like
+        A list of sequences (e.g., neuron spike orders) to compare with the template.
+    tmpl : array_like
+        The template sequence against which each sequence is evaluated.
+    nrm : array_like
+        Normalization parameters. Each row is expected to contain reference values 
+        (e.g., [?, mean, std, threshold]) for z-score calculation. The first column is used 
+        to match the overlap length.
+
+    Returns
+    -------
+    zval : numpy.ndarray
+        Array of z-scores for each sequence based on the rank correlation with the template.
+    sig : numpy.ndarray
+        Binary array (0 or 1) indicating whether each sequence's z-score exceeds the threshold.
+    """
+    nseqs = len(seqs)
+    # Flatten the template sequence for comparison.
+    s1 = np.array(tmpl).flatten()
+
+    # Extract the first column from nrm to be used for matching the overlap length.
+    narr = np.array(nrm)[:, 0]
+    
+    sig = np.zeros(nseqs)
+    zval = np.zeros(nseqs)
+        
+    for ns in range(nseqs):
+        s2 = seqs[ns]
+        rc, ln = rankseq(s1, s2)  # Compute rank correlation and overlap length
+        
+        # Choose normalization parameters based on the overlap length.
+        if ln >= 50:
+            mns = nrm[-1]  # Use the last row if sufficient overlap exists.
+        else:
+            # Find the matching normalization parameters for the given overlap length.
+            whichone = np.array(np.where(ln == narr)).flatten()
+            if len(whichone) == 0:
+                mns = np.empty(4)
+                mns[:] = np.nan
             else:
-                mns=nrm[whichone[0]]
+                mns = nrm[whichone[0]]
+
+        # Calculate the z-score using the reference mean and standard deviation.
+        ztmp = (rc - mns[1]) / mns[2]
+        # Set the significance flag if the z-score exceeds the threshold.
+        sig[ns] = 1.0 * (ztmp > mns[3])
+        zval[ns] = ztmp
+
+    return zval, sig
 
 
-        ztmp=(rc-mns[1])/mns[2]
-        sig[ns]=1.*(ztmp>mns[3])
-        zval[ns]=ztmp
+def average_sequence(burst_set):
+    """
+    Compute an average sequence template from a set of bursts.
+
+    This function computes the mean burst across a set of bursts (averaging over the first axis) 
+    and then calculates a weighted average sequence (coefficient sequence) based on burst intensities.
+    The resulting sequence is generated by sorting the weighted coefficients and filtering out any 
+    NaN values.
+
+    Parameters
+    ----------
+    burst_set : array_like
+        A 3D numpy array where bursts are arranged along the first dimension.
+
+    Returns
+    -------
+    seq : numpy.ndarray
+        An array representing the ordered indices of the average sequence template.
+    cofseq : numpy.ndarray
+        The weighted coefficient sequence computed from the burst data.
+    """
+    # Compute the mean burst over all bursts in the set.
+    vec = np.mean(burst_set, axis=0)
+    # Generate an index array corresponding to columns.
+    itax = np.arange(vec.shape[1])
+    # Sum each row to obtain total burst intensity.
+    nvec = np.sum(vec, axis=1)
+    # Compute the center of mass for each row of the averaged burst (vec):
+
+    cofseq = (itax @ vec.transpose()) / nvec
+    # Sort indices based on the weighted coefficients.
+    tmp = np.argsort(cofseq)
+    # Remove indices corresponding to NaN coefficient values.
+    seq = tmp[~np.isnan(np.sort(cofseq))]
+
+    return seq, cofseq
 
 
-    return zval,sig
+def within_across(adj, ids_clust):
+    """
+    Compute within-cluster and across-cluster mean adjustments.
 
+    For each cluster, this function calculates the mean adjustment (e.g., significance flag) 
+    for sequences within the cluster (within-cluster) and for those outside the cluster 
+    (across-cluster).
 
+    Parameters
+    ----------
+    adj : list of array_like
+        A list where each element corresponds to a cluster and contains adjustment values.
+    ids_clust : array_like
+        An array of cluster IDs assigning each sequence (or burst) to a cluster.
+
+    Returns
+    -------
+    ret : dict
+        Dictionary with keys:
+            - 'within': List of mean adjustment values computed for sequences within each cluster.
+            - 'across': List of mean adjustment values computed for sequences outside each cluster.
+    """
+    ret = {'within': [], 'across': []}
+    # Loop over each cluster's adjustment values.
+    for nc in range(len(adj)):
+        # Get indices of sequences inside and outside the current cluster.
+        idin = np.where(ids_clust == nc)[0]
+        idout = np.where(~(ids_clust == nc))[0]
+        # Compute the mean adjustments.
+        within = np.mean(adj[nc][idin])
+        across = np.mean(adj[nc][idout])
+        ret['within'].append(within)
+        ret['across'].append(across)
+
+    return ret
 
 
 

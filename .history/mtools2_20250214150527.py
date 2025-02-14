@@ -33,310 +33,537 @@ def extract_seq(times):
     stimes=np.sort(times)
     ids=np.argsort(times)
     return ids[np.where(~np.isnan(stimes))[0]], ids
+
+
+
     
-def rankseq(s1,s2):
+# def rankseq(s1,s2):
 
-    #compute rank order correlation between sequences
+#     #compute rank order correlation between sequences
 
-    # set things straight
-    s1=np.array(s1).flatten()
-    s2=np.array(s2).flatten()
-    l1=len(s1)
-    l2=len(s2)
+#     # set things straight
+#     s1=np.array(s1).flatten()
+#     s2=np.array(s2).flatten()
+#     l1=len(s1)
+#     l2=len(s2)
     
-    #difference matrix
-    d=np.ones((l1,1))*s2 - (np.ones((l2,1))*s1).transpose()
+#     #difference matrix
+#     d=np.ones((l1,1))*s2 - (np.ones((l2,1))*s1).transpose()
   
-    # binary identity matrix
-    d=(d==0)
+#     # binary identity matrix
+#     d=(d==0)
   
 
-    # make s0 the shorter sequence
-    s=s1
-    s0=s2
-    l0=l2
-    ln=l1
-    if l1<l2:
-        s=s2;
-        s0=s1;
-        l0=l1
-        ln=l2
-        d=d.transpose()
+#     # make s0 the shorter sequence
+#     s=s1
+#     s0=s2
+#     l0=l2
+#     ln=l1
+#     if l1<l2:
+#         s=s2;
+#         s0=s1;
+#         l0=l1
+#         ln=l2
+#         d=d.transpose()
 
 
  
         
-    #compute cell overlap (neurons contained in both)
-    minseq=s[np.where(np.sum(d,axis=1)>0)[0]];
-    lm=len(minseq)
+#     #compute cell overlap (neurons contained in both)
+#     minseq=s[np.where(np.sum(d,axis=1)>0)[0]];
+#     lm=len(minseq)
   
-    # delete neurons from the shorter sequence that are not in the minimal
-    # sequence
-    #
+#     # delete neurons from the shorter sequence that are not in the minimal
+#     # sequence
+#     #
     
-    d0=np.ones((l0,1))*minseq - (np.ones((lm,1))*s0).transpose()
-    d0=(d0==0)
-    s0=s0[np.sum(d0,axis=1)>0]
-    l0=len(s0)
+#     d0=np.ones((l0,1))*minseq - (np.ones((lm,1))*s0).transpose()
+#     d0=(d0==0)
+#     s0=s0[np.sum(d0,axis=1)>0]
+#     l0=len(s0)
   
   
-    #find ordinal rank in the shorter sequence
-    dd=np.ones((lm,1))*s0 - (np.ones((l0,1))*minseq).transpose()
+#     #find ordinal rank in the shorter sequence
+#     dd=np.ones((lm,1))*s0 - (np.ones((l0,1))*minseq).transpose()
   
-    #compute spearmans r
-    if len(dd)>1:
-        ids=np.argmin(np.abs(dd),axis=0)
+#     #compute spearmans r
+#     if len(dd)>1:
+#         ids=np.argmin(np.abs(dd),axis=0)
         
-        rc = np.corrcoef(np.arange(len(ids)),ids)[0,1]
-        ln=len(ids)
-    else:
-        rc=np.nan;
-        ln=np.nan
+#         rc = np.corrcoef(np.arange(len(ids)),ids)[0,1]
+#         ln=len(ids)
+#     else:
+#         rc=np.nan;
+#         ln=np.nan
   
    
+    
+#     return rc, ln
+
+
+
+# def shuffle(narr):
+
+#     nrep=10000
+    
+#     ret=[]
+#     for n in narr:
+
+#         s2=np.arange(n)
+
+#         rval=np.zeros(nrep)
+#         for m in range(nrep):
+
+#             s1=np.random.permutation(n)
+
+#             rval[m],dummy=rankseq(s1,s2)
+
+#         c=np.mean(rval)
+#         sd=np.std(rval)
+#         prctl=np.quantile(rval,.95)
+        
+#         ret.append([n, c, sd, prctl])
+
+#     return ret
+
+    
+# def allmot(seqs,nrm):
+
+#     nseqs=len(seqs)
+
+#     narr=np.array(nrm)[:,0]
+
+#     corrmat=np.zeros((nseqs,nseqs))
+#     zmat=np.zeros((nseqs,nseqs))
+#     bmat=np.zeros((nseqs,nseqs))
+#     pval=np.zeros(nseqs)
+#     nsig=np.zeros(nseqs)
+    
+#     for ns in range(nseqs):
+
+#         s1=seqs[ns]
+
+#         zmat[ns,ns]=np.nan
+#         bmat[ns,ns]=np.nan
+#         for ms in range(ns+1,nseqs):
+
+            
+
+#             s2=seqs[ms]
+
+#             rc,ln=rankseq(s1,s2)
+            
+
+#             if ln>=50:
+#                 mns=nrm[-1]
+#             else:
+#                 whichone=np.array(np.where(ln==narr)).flatten()
+#                 if len(whichone)==0:
+#                     mns=np.empty(4)
+#                     mns[:]=np.nan
+#                 else:
+#                     mns=nrm[whichone[0]]
+                    
+                    
+#             ztmp=(rc-mns[1])/mns[2]
+#             #print(ns,mns,ztmp)
+#             corrmat[ns,ms]=rc
+#             corrmat[ms,ns]=rc
+
+#             zmat[ns,ms]=ztmp
+#             zmat[ms,ns]=ztmp
+#             bmat[ns,ms]=1.*(ztmp>mns[3])
+#             bmat[ms,ns]=1.*(ztmp>mns[3])
+
+#         nsig[ns] = np.nansum(bmat[ns,:])
+#         pval[ns] = 1-binom.cdf(nsig[ns],nseqs-1,.05)
+
+
+#     rep_index = nsig/np.std(nsig)
+
+
+#     return rep_index, nsig, pval, bmat, zmat, corrmat
+import numpy as np
+
+def rankseq(s1, s2):
+    """
+    Compute the Spearman rank order correlation coefficient between two sequences.
+
+    This function calculates the rank order correlation between two sequences, `s1` and `s2`,
+    by first determining the overlap between their elements (interpreted as neurons) and then
+    computing the Spearman correlation between the ordinal positions of the overlapping elements.
+    If one sequence is shorter than the other, it is used as the reference for ranking.
+
+    Parameters
+    ----------
+    s1 : array_like
+        First input sequence (e.g., a list or 1D numpy array).
+    s2 : array_like
+        Second input sequence (e.g., a list or 1D numpy array).
+
+    Returns
+    -------
+    rc : float
+        Spearman rank correlation coefficient between the two sequences. Returns NaN if the
+        correlation cannot be computed (e.g., due to insufficient overlapping elements).
+    ln : int or float
+        The number of overlapping elements (neurons) used in the correlation computation.
+        Returns NaN if the correlation is not computed.
+    """
+    # Ensure the sequences are flattened numpy arrays.
+    s1 = np.array(s1).flatten()
+    s2 = np.array(s2).flatten()
+    l1 = len(s1)
+    l2 = len(s2)
+    
+    # Create a difference matrix where each element compares an element from s1 to an element from s2.
+    d = np.ones((l1, 1)) * s2 - (np.ones((l2, 1)) * s1).transpose()
+    # Convert the difference matrix to a binary identity matrix (True where elements are equal).
+    d = (d == 0)
+    
+    # Choose the longer sequence as 's' and the shorter as 's0'. Adjust the difference matrix accordingly.
+    s = s1
+    s0 = s2
+    ln = l1
+    if l1 < l2:
+        s = s2
+        s0 = s1
+        ln = l2
+        d = d.transpose()
+        
+    # Identify overlapping elements (neurons present in both sequences).
+    minseq = s[np.where(np.sum(d, axis=1) > 0)[0]]
+    
+    # Remove elements from the shorter sequence that are not in the overlapping set.
+    d0 = np.ones((len(s0), 1)) * minseq - (np.ones((len(minseq), 1)) * s0).transpose()
+    d0 = (d0 == 0)
+    s0 = s0[np.sum(d0, axis=1) > 0]
+    
+    # Prepare a matrix to determine ordinal ranking differences.
+    dd = np.ones((len(minseq), 1)) * s0 - (np.ones((len(s0), 1)) * minseq).transpose()
+    
+    # Compute Spearman's rank correlation coefficient if there is more than one overlapping element.
+    if len(dd) > 1:
+        ids = np.argmin(np.abs(dd), axis=0)
+        rc = np.corrcoef(np.arange(len(ids)), ids)[0, 1]
+        ln = len(ids)
+    else:
+        rc = np.nan
+        ln = np.nan
     
     return rc, ln
 
 
-
 def shuffle(narr):
+    """
+    Compute statistics of Spearman rank correlations for randomly shuffled sequences.
 
-    nrep=10000
-    
-    ret=[]
+    For each integer `n` in the input array `narr`, this function generates 10,000 random
+    permutations of the sequence [0, 1, ..., n-1] and computes the Spearman rank correlation
+    with the sorted sequence using the `rankseq` function. It then calculates the mean, standard
+    deviation, and 95th percentile of these correlation coefficients.
+
+    Parameters
+    ----------
+    narr : array_like
+        An array or list of integers. Each integer represents the length of a sequence to be
+        shuffled and analyzed.
+
+    Returns
+    -------
+    ret : list of lists
+        A list where each sublist corresponds to an input `n` and has the format:
+        [n, mean_correlation, std_correlation, correlation_95th_percentile].
+    """
+    nrep = 10000  # Number of repetitions for the shuffling procedure.
+    ret = []
     for n in narr:
-
-        s2=np.arange(n)
-
-        rval=np.zeros(nrep)
+        s2 = np.arange(n)  # Create a sorted sequence of length n.
+        rval = np.zeros(nrep)
         for m in range(nrep):
-
-            s1=np.random.permutation(n)
-
-            rval[m],dummy=rankseq(s1,s2)
-
-        c=np.mean(rval)
-        sd=np.std(rval)
-        prctl=np.quantile(rval,.95)
-        
+            s1 = np.random.permutation(n)  # Generate a random permutation.
+            rval[m], _ = rankseq(s1, s2)     # Compute rank correlation with the sorted sequence.
+        c = np.mean(rval)
+        sd = np.std(rval)
+        prctl = np.quantile(rval, 0.95)
         ret.append([n, c, sd, prctl])
-
     return ret
 
-    
-def allmot(seqs,nrm):
-
-    nseqs=len(seqs)
-
-    narr=np.array(nrm)[:,0]
-
-    corrmat=np.zeros((nseqs,nseqs))
-    zmat=np.zeros((nseqs,nseqs))
-    bmat=np.zeros((nseqs,nseqs))
-    pval=np.zeros(nseqs)
-    nsig=np.zeros(nseqs)
-    
-    for ns in range(nseqs):
-
-        s1=seqs[ns]
-
-        zmat[ns,ns]=np.nan
-        bmat[ns,ns]=np.nan
-        for ms in range(ns+1,nseqs):
-
-            
-
-            s2=seqs[ms]
-
-            rc,ln=rankseq(s1,s2)
-            
-
-            if ln>=50:
-                mns=nrm[-1]
-            else:
-                whichone=np.array(np.where(ln==narr)).flatten()
-                if len(whichone)==0:
-                    mns=np.empty(4)
-                    mns[:]=np.nan
-                else:
-                    mns=nrm[whichone[0]]
-                    
-                    
-            ztmp=(rc-mns[1])/mns[2]
-            #print(ns,mns,ztmp)
-            corrmat[ns,ms]=rc
-            corrmat[ms,ns]=rc
-
-            zmat[ns,ms]=ztmp
-            zmat[ms,ns]=ztmp
-            bmat[ns,ms]=1.*(ztmp>mns[3])
-            bmat[ms,ns]=1.*(ztmp>mns[3])
-
-        nsig[ns] = np.nansum(bmat[ns,:])
-        pval[ns] = 1-binom.cdf(nsig[ns],nseqs-1,.05)# i will change pvalue from .05 to 0.01 for merging(hamed 02.02.2023)
 
 
-    rep_index = nsig/np.std(nsig)
+# def check_template(seqs,tmpl,nrm):
 
+#     nseqs=len(seqs)
+#     s1=np.array(tmpl).flatten()
 
-    return rep_index, nsig, pval, bmat, zmat, corrmat
-
-
-def check_template(seqs,tmpl,nrm):
-
-    nseqs=len(seqs)
-    s1=np.array(tmpl).flatten()
-
-    narr=np.array(nrm)[:,0]    
-    sig=np.zeros(nseqs)
-    zval=np.zeros(nseqs)
+#     narr=np.array(nrm)[:,0]    
+#     sig=np.zeros(nseqs)
+#     zval=np.zeros(nseqs)
         
-    for ns in range(nseqs):
+#     for ns in range(nseqs):
     
-        s2=seqs[ns]
-        rc,ln=rankseq(s1,s2)
-        #print(rc,ln)
+#         s2=seqs[ns]
+#         rc,ln=rankseq(s1,s2)
+#         #print(rc,ln)
         
-        if ln>=50:
-            mns=nrm[-1]
+#         if ln>=50:
+#             mns=nrm[-1]
+#         else:
+#             whichone=np.array(np.where(ln==narr)).flatten()
+#             if len(whichone)==0:
+#                 mns=np.empty(4)
+#                 mns[:]=np.nan
+#             else:
+#                 mns=nrm[whichone[0]]
+
+
+#         ztmp=(rc-mns[1])/mns[2]
+#         sig[ns]=1.*(ztmp>mns[3])
+#         zval[ns]=ztmp
+
+
+#     return zval,sig
+
+
+import numpy as np
+
+def templates(bursts, seqs, nrm, ids_clust, min_ratio=2):
+    """
+    Generate templates for neural burst sequences based on clustering and quality criteria.
+
+    This function computes a template sequence for each cluster of bursts. For each cluster, 
+    it calculates a representative sequence (template) using either the mean (for 2D burst data) 
+    or an averaged sequence (for 3D burst data). The template is then evaluated with the 
+    `check_template` function to compute a quality metric (radius). Finally, clusters whose 
+    quality ratio (within-cluster / across-cluster correlation) is below `min_ratio` are excluded.
+
+    Parameters
+    ----------
+    bursts : array_like
+        A 2D or 3D array of burst sequences. If 2D, each row represents a burst; if 3D, bursts 
+        may include additional dimensions (e.g., time bins x neurons).
+    seqs : list or array_like
+        A list of individual sequences (e.g., neuron spike orderings) corresponding to the bursts.
+    nrm : array_like
+        An array containing normalization parameters (e.g., mean, standard deviation, and threshold)
+        used for z-score computation in template quality checking.
+    ids_clust : array_like
+        An array of cluster IDs assigning each burst (or sequence) to a specific cluster.
+    min_ratio : float, optional
+        The minimum ratio (within-cluster / across-cluster correlation) required for a cluster's 
+        template to be accepted. Clusters with a lower ratio are excluded (default is 2).
+
+    Returns
+    -------
+    retval : dict
+        Dictionary containing:
+            - 'adj': List of adjustment (significance) values for each accepted cluster.
+            - 'template': List of accepted template sequences.
+            - 'clist': List of indices for bursts belonging to each accepted cluster.
+            - 'radius': List of radius values (quality measure) for each accepted template.
+            - 'seqs': Original input sequences (for reference).
+            - 'ids_clust': Original cluster IDs (for reference).
+            - 'bursts': Original burst data (for reference).
+            - 'ratio': List of computed quality ratios for each cluster.
+            - 'exclude': List of cluster indices that were excluded based on the quality ratio.
+    """
+    # Initialize the return dictionary with placeholders.
+    retval = {
+        'adj': [],
+        'template': [],
+        'clist': [],
+        'radius': [],
+        'seqs': [],
+        'ids_clust': [],
+        'bursts': [],
+        'ratio': []
+    }
+    
+    # Save the original input data for reference.
+    retval['seqs'].append(seqs)         # Added by Hamed
+    retval['ids_clust'].append(ids_clust) # Added by Hamed
+    retval['bursts'].append(bursts)       # Added by Hamed
+
+    # Process each cluster based on its identifier.
+    for nc in range(max(ids_clust) + 1):
+        # Find the indices of bursts belonging to the current cluster.
+        clist = np.where(ids_clust == nc)[0]
+        
+        # Determine the template based on the dimensionality of the bursts data.
+        if np.array(bursts).ndim == 2:
+            # For 2D data: compute the mean burst across the cluster, then sort.
+            mns = np.nanmean(np.array(bursts)[clist, :], axis=0)
+            tmp = np.argsort(mns)
+            # Remove any indices corresponding to NaN values.
+            temp = tmp[~np.isnan(np.sort(mns))]
+        elif np.array(bursts).ndim == 3:
+            # For 3D data: compute an average sequence using the helper function.
+            temp, _ = average_sequence(np.array(bursts)[clist, :, :])
         else:
-            whichone=np.array(np.where(ln==narr)).flatten()
-            if len(whichone)==0:
-                mns=np.empty(4)
-                mns[:]=np.nan
-            else:
-                mns=nrm[whichone[0]]
-
-
-        ztmp=(rc-mns[1])/mns[2]
-        sig[ns]=1.*(ztmp>mns[3])
-        zval[ns]=ztmp
-
-
-    return zval,sig
-
-
-
-
-
-
-
-
-
-
-
-def popbursts(mat,sig,fs,kwidth=0,minwidth=1):
-    global Tspare
-    random_time=False
-    import random
-    #poprate=np.sum(mat,axis=0)
-    if kwidth<1/(3*fs):
-        kwidth=1/(3*fs)
-        poprate=np.sum(mat,axis=0)
-    else:
-        tax=np.arange(-3*kwidth,3*kwidth,1/fs)
-        poprate=np.convolve(np.sum(mat,axis=0),np.exp(-(tax**2)/2/kwidth**2)/kwidth,'same')
-    
-    thresh=np.mean(poprate)+sig*np.std(poprate)
-    spare=int(Tspare*fs)
-    print('Burst length is ' ,Tspare)
-    
-    #mask=(poprate>=thresh)*1.
-    #mask=1.*(np.diff(mask)==1)
-    #ids=np.where(mask>0)[0]
-    
-    vec=[]
-    
-    idpeaks, _ = find_peaks(poprate, height=thresh, width=(minwidth,spare*10), distance=spare)
-    
-    peaks=[]
-    idprev=-1
-    #for n in range(len(ids)):
-    #
-    #    id0=ids[n]
-    #
-    #    if id0+spare<=mat.shape[1]:
-    #        idpeak=np.argmax(poprate[id0:id0+spare])+id0
-    #        if (idpeak-idprev>spare)*(idpeak-int(spare/2)>=0)*(idpeak+int(spare/2)+1<=mat.shape[1]):
-    #            vtmp=mat[:,idpeak-int(spare/2):idpeak+int(spare/2)+1]
-    #            if len(np.where(np.sum(vtmp,axis=1)>0)[0])>4:#mimimum 5 active cells
-    #                vec.append(vtmp)
-    #                peaks.append(idpeak/fs)
-    #                idprev=idpeak
-    
-    for idpeak in idpeaks:
-        if (idpeak-idprev>spare)*(idpeak-int(spare/2)>=0)*(idpeak+int(spare/2)+1<=mat.shape[1]):
-            vtmp = mat[:,idpeak-int(spare/2):idpeak+int(spare/2)+1]
-
-            if random_time:
-                column_indices = np.arange(np.shape(vtmp)[1])
-                np.random.shuffle(column_indices)
-                print('bursts are randomized!!!')
-                # Use the shuffled index array to rearrange the columns
-                vtmp = vtmp[:, column_indices]
-
-
-
-
-            if len(np.where(np.sum(vtmp,axis=1)>0)[0])>4:
-                vec.append(vtmp)
-                #peaks.append(idpeak/fs)
-
-                peaks.append(idpeak)# Hamed Chaned
-
-                idprev=idpeak
-                
-                
-    if len(vec)>0:
+            raise ValueError("Unsupported burst data dimensionality.")
+            
+        # Check the template quality against the provided sequences using normalization parameters.
+        chck = check_template(seqs, temp, nrm)
+        # Define the template's "radius" as the mean significance flag scaled by 30.
+        radius = np.mean(chck[1]) * 30
         
-        # if random_time==True:
-        #     itax=np.arange(vec[0].shape[1])
-        #     random.shuffle(itax)
-        #     print('bursts are randomized!!!')
-        # else:
+        # Store the computed template and related metrics.
+        retval['template'].append(temp)
+        retval['clist'].append(clist)
+        retval['radius'].append(radius)
+        retval['adj'].append(chck[1])
 
-        itax=np.arange(vec[0].shape[1])
-
-
-
-    seq=[]
-    for nv in range(len(vec)):
-        nvec=np.sum(vec[nv],axis=1)
-        cofseq=(itax@vec[nv].transpose())/nvec
-        tmp=np.argsort(cofseq)
-        seq.append(tmp[~np.isnan(np.sort(cofseq))])
-                   
-      
+    # Evaluate the quality of each cluster template using within- and across-cluster measures.
+    crit = within_across(retval['adj'], ids_clust)
+    retval.update({'exclude': []})
     
+    # Compute a quality ratio for each cluster and mark clusters for exclusion if they do not meet the threshold.
+    for nc in range(len(retval['radius'])):
+        ratio = crit['within'][nc] / crit['across'][nc]
+        retval['ratio'].append(ratio)
+        if ratio < min_ratio:
+            retval['exclude'].append(nc)
+                               
+    # Remove clusters that failed to meet the quality threshold.
+    retval['template'] = [i for j, i in enumerate(retval['template']) if j not in retval['exclude']]
+    retval['clist'] = [i for j, i in enumerate(retval['clist']) if j not in retval['exclude']]
+    retval['radius'] = [i for j, i in enumerate(retval['radius']) if j not in retval['exclude']]
+    retval['adj'] = [i for j, i in enumerate(retval['adj']) if j not in retval['exclude']]
+    # Optionally, similar filtering can be applied to 'ratio' and 'ids_clust' if desired.
+
+    return retval
+
+
+def check_template(seqs, tmpl, nrm):
+    """
+    Evaluate a template against a set of sequences using rank correlation and compute z-scores.
+
+    For each sequence in `seqs`, this function calculates the Spearman rank order correlation 
+    with the template `tmpl` (using the previously defined `rankseq` function). Based on the 
+    overlap length between the template and each sequence, appropriate normalization parameters 
+    are selected from `nrm`. A z-score is then computed, and a binary significance flag is set 
+    if the z-score exceeds a threshold.
+
+    Parameters
+    ----------
+    seqs : list or array_like
+        A list of sequences (e.g., neuron spike orders) to compare with the template.
+    tmpl : array_like
+        The template sequence against which each sequence is evaluated.
+    nrm : array_like
+        Normalization parameters. Each row is expected to contain reference values 
+        (e.g., [?, mean, std, threshold]) for z-score calculation. The first column is used 
+        to match the overlap length.
+
+    Returns
+    -------
+    zval : numpy.ndarray
+        Array of z-scores for each sequence based on the rank correlation with the template.
+    sig : numpy.ndarray
+        Binary array (0 or 1) indicating whether each sequence's z-score exceeds the threshold.
+    """
+    nseqs = len(seqs)
+    # Flatten the template sequence for comparison.
+    s1 = np.array(tmpl).flatten()
+
+    # Extract the first column from nrm to be used for matching the overlap length.
+    narr = np.array(nrm)[:, 0]
     
-    
-    return vec,seq,peaks,poprate
+    sig = np.zeros(nseqs)
+    zval = np.zeros(nseqs)
+        
+    for ns in range(nseqs):
+        s2 = seqs[ns]
+        rc, ln = rankseq(s1, s2)  # Compute rank correlation and overlap length
+        
+        # Choose normalization parameters based on the overlap length.
+        if ln >= 50:
+            mns = nrm[-1]  # Use the last row if sufficient overlap exists.
+        else:
+            # Find the matching normalization parameters for the given overlap length.
+            whichone = np.array(np.where(ln == narr)).flatten()
+            if len(whichone) == 0:
+                mns = np.empty(4)
+                mns[:] = np.nan
+            else:
+                mns = nrm[whichone[0]]
 
+        # Calculate the z-score using the reference mean and standard deviation.
+        ztmp = (rc - mns[1]) / mns[2]
+        # Set the significance flag if the z-score exceeds the threshold.
+        sig[ns] = 1.0 * (ztmp > mns[3])
+        zval[ns] = ztmp
 
-
-
-
-
+    return zval, sig
 
 
 def average_sequence(burst_set):
-    
-    vec=np.mean(burst_set,axis=0)
-    itax=np.arange(vec.shape[1])
-    nvec=np.sum(vec,axis=1)
-    cofseq=(itax@vec.transpose())/nvec
-    tmp=np.argsort(cofseq)
-    seq=tmp[~np.isnan(np.sort(cofseq))]
+    """
+    Compute an average sequence template from a set of bursts.
 
-    return seq,cofseq
+    This function computes the mean burst across a set of bursts (averaging over the first axis) 
+    and then calculates a weighted average sequence (coefficient sequence) based on burst intensities.
+    The resulting sequence is generated by sorting the weighted coefficients and filtering out any 
+    NaN values.
+
+    Parameters
+    ----------
+    burst_set : array_like
+        A 3D numpy array where bursts are arranged along the first dimension.
+
+    Returns
+    -------
+    seq : numpy.ndarray
+        An array representing the ordered indices of the average sequence template.
+    cofseq : numpy.ndarray
+        The weighted coefficient sequence computed from the burst data.
+    """
+    # Compute the mean burst over all bursts in the set.
+    vec = np.mean(burst_set, axis=0)
+    # Generate an index array corresponding to columns.
+    itax = np.arange(vec.shape[1])
+    # Sum each row to obtain total burst intensity.
+    nvec = np.sum(vec, axis=1)
+    # Compute the center of mass:
+
+    cofseq = (itax @ vec.transpose()) / nvec
+    # Sort indices based on the weighted coefficients.
+    tmp = np.argsort(cofseq)
+    # Remove indices corresponding to NaN coefficient values.
+    seq = tmp[~np.isnan(np.sort(cofseq))]
+
+    return seq, cofseq
 
 
-def within_across(adj,ids_clust):
+def within_across(adj, ids_clust):
+    """
+    Compute within-cluster and across-cluster mean adjustments.
 
-    ret={'within':[], 'across':[]}
+    For each cluster, this function calculates the mean adjustment (e.g., significance flag) 
+    for sequences within the cluster (within-cluster) and for those outside the cluster 
+    (across-cluster).
+
+    Parameters
+    ----------
+    adj : list of array_like
+        A list where each element corresponds to a cluster and contains adjustment values.
+    ids_clust : array_like
+        An array of cluster IDs assigning each sequence (or burst) to a cluster.
+
+    Returns
+    -------
+    ret : dict
+        Dictionary with keys:
+            - 'within': List of mean adjustment values computed for sequences within each cluster.
+            - 'across': List of mean adjustment values computed for sequences outside each cluster.
+    """
+    ret = {'within': [], 'across': []}
+    # Loop over each cluster's adjustment values.
     for nc in range(len(adj)):
-        idin = np.where((ids_clust==nc))[0]
-        idout = np.where(~(ids_clust==nc))[0]
+        # Get indices of sequences inside and outside the current cluster.
+        idin = np.where(ids_clust == nc)[0]
+        idout = np.where(~(ids_clust == nc))[0]
+        # Compute the mean adjustments.
         within = np.mean(adj[nc][idin])
         across = np.mean(adj[nc][idout])
         ret['within'].append(within)
@@ -344,54 +571,385 @@ def within_across(adj,ids_clust):
 
     return ret
 
-def templates(bursts,seqs,nrm,ids_clust,min_ratio=2):
 
-    retval={'adj':[], 'template':[], 'clist':[], 'radius':[],'seqs':[],'ids_clust':[], 'bursts':[], 'ratio':[]}
-    retval['seqs'].append(seqs)# added by Hamed
-    retval['ids_clust'].append(ids_clust)# added by Hamed
-    retval['bursts'].append(bursts)# added by Hamed
 
-    for nc in range(max(ids_clust)+1):
-        clist=(np.where(ids_clust==nc)[0])
-        if np.array(bursts).ndim==2:
-            mns = np.nanmean(np.array(bursts)[clist,:], axis=0)
-            tmp = np.argsort(mns)
-            temp = tmp[~np.isnan(np.sort(mns))]
+import numpy as np
+from scipy.signal import find_peaks
 
-        elif np.array(bursts).ndim==3:
-            temp,dummy = average_sequence(np.array(bursts)[clist,:,:])
+def binned_burst(dt, winlen, thr_burts, fs, timewins):
+    """
+    Bin the population data into time windows and detect bursts within each window. For the manuscript we did not perform binning
+
+    This function segments the input data matrix `dt` (cells x time) into smaller time 
+    windows. If `timewins` is empty, it automatically generates time window boundaries based 
+    on the window length `winlen`. For each time window, it calls the `popbursts` function to 
+    detect bursts and extract the associated burst sequences. The results from each window 
+    are then aggregated.
+
+    Parameters
+    ----------
+    dt : np.ndarray
+        2D array of neural data (cells x time) representing population activity.
+    winlen : int or float
+        Length of each time window (in samples) used to bin the data.
+    thr_burts : float
+        Threshold multiplier for burst detection used by the `popbursts` function.
+    fs : float
+        Sampling frequency of the data (in Hz).
+    timewins : list or array-like
+        List of time window boundaries (indices). If empty, time windows are automatically 
+        generated based on the data length and `winlen`.
+
+    Returns
+    -------
+    poprate : list
+        Aggregated population firing rate over all time windows.
+    id_peaks_trl : list
+        Aggregated indices (relative to the full data) of detected burst peaks.
+    bursts_tmp : list
+        List of detected burst segments (submatrices) from each time window.
+    seqs_tmp : list
+        List of burst sequences (orderings of cell activations) derived from each burst.
+    """
+    # If no time window boundaries are provided, generate them automatically.
+    if len(timewins) < 1:
+        # Generate equally spaced boundaries across the number of time samples in dt.
+        timewins = f2(np.ceil(np.linspace(0, dt.shape[1], int(np.ceil(dt.shape[1] / winlen)))))
+        if dt.shape[1] < winlen:
+            timewins = [0, dt.shape[1]]
+    
+    # Initialize lists to store the aggregated results.
+    seqs_tmp = []         # Burst sequences
+    bursts_tmp = []        # Burst segments (submatrices)
+    spike_time = []        # (Optional) Spike times per burst (not used in this version)
+    id_peaks_trl = []      # Peak indices per trial/window
+    poprate = []           # Population firing rate over all windows
+    lsdt = 0               # Cumulative time offset for each window
+    raw_data = []          # Raw data segments (for debugging or further processing)
+    Rasters = []           # Raster data (if needed)
+    lentrials = []         # Trial lengths (for debugging or further processing)
+    id_peaks_all = []      # All detected peak indices (not used later)
+    spike_time_all = []    # Aggregated spike times (if available)
+    
+    dtlen = 0  # Cumulative length of processed data (in samples)
+    i0 = 0     # Index offset for each window
+    
+    # Loop over each pair of consecutive time window boundaries.
+    for twin in np.arange(len(timewins) - 1):
+        # Extract the segment of data corresponding to the current time window.
+        sdt = dt[:, timewins[twin]:timewins[twin+1]]
+        # Check that the segment is valid (here, sum > -10000 acts as a basic validity check).
+        if np.sum(sdt[:]) > -10000:
+            # Call popbursts to detect bursts in the current time window.
+            bursts_tmp_s, seqs_tmp_s, id_peaks_trl_s, poprate_s = popbursts(sdt, thr_burts, fs)
             
-        chck=check_template(seqs,temp,nrm)
-        radius=np.mean(chck[1])*30
-        retval['template'].append(temp)
-        retval['clist'].append(clist)
-        retval['radius'].append(radius)
-        retval['adj'].append(chck[1])
+            # Store raw data from the current window (transposed for convenience).
+            raw_data.extend(np.transpose(dt[:, timewins[twin]:timewins[twin+1]]))
+            lentrials.extend(np.transpose(dt[:, timewins[twin]:timewins[twin+1]]))
+            
+            # Adjust the peak indices to the full-session time by adding the cumulative offset.
+            id_peaks_all.extend([k + dtlen for k in id_peaks_trl_s])
+            dtlen += sdt.shape[1]
+            
+            # Update the cumulative offset for the burst peaks.
+            poprate.extend(poprate_s)
+            id_peaks_trl.extend(np.array(id_peaks_trl_s) + lsdt)
+            bursts_tmp.extend(bursts_tmp_s)
+            seqs_tmp.extend(seqs_tmp_s)
+            lsdt += sdt.shape[1]
+            
+        # (Optional) Merge spike times from all windows if available.
+        if len(spike_time_all) > 0:
+            spike_time_mrg = merge_spike_times(spike_time_all, dt.shape[0])
+        else:
+            spike_time_mrg = []
+        
+        # Update the offset for the next window.
+        i0 = i0 + sdt.shape[1]
+    
+    return poprate, id_peaks_trl, bursts_tmp, seqs_tmp
 
 
-    crit = within_across(retval['adj'],ids_clust)
-    retval.update({'exclude':[]})
-    for nc in range(len(retval['radius'])):
-        ratio=crit['within'][nc]/crit['across'][nc]
-        best_ratio=crit['within'][nc]
-        #retval['within_ratio'].append(best_ratio)
-        retval['ratio'].append(ratio)
+def popbursts(mat, sig, fs, kwidth=0, minwidth=1):
+    """
+    Detect population bursts and extract burst sequences from a data matrix.
 
-        #print(nc, ": ", ratio)
-        if ratio<min_ratio:
-            retval['exclude'].append(nc)
+    This function computes a population rate by summing the activity across cells in the input 
+    matrix `mat`. If a kernel width (`kwidth`) is provided (or adjusted), the population rate is 
+    smoothed using a Gaussian kernel. A threshold for burst detection is then set based on the 
+    mean and standard deviation of the population rate scaled by `sig`. The `find_peaks` function 
+    identifies burst peaks, and for each peak, a burst segment (a submatrix) is extracted around 
+    the peak. Optionally, the burst segment can be randomized in time. Finally, a "sequence" is 
+    computed for each burst using a center-of-mass calculation on the burst segment.
+
+    Parameters
+    ----------
+    mat : np.ndarray
+        2D data matrix (cells x time) for which bursts are to be detected.
+    sig : float
+        Multiplier for the standard deviation to set the burst detection threshold.
+    fs : float
+        Sampling frequency of the data.
+    kwidth : float, optional
+        Kernel width for Gaussian smoothing of the population rate. If less than 1/(3*fs), it is 
+        set to 1/(3*fs). Default is 0.
+    minwidth : float, optional
+        Minimum width (in samples) for a detected burst peak. Default is 1.
+
+    Returns
+    -------
+    vec : list
+        List of detected burst segments (submatrices extracted from the data matrix).
+    seq : list
+        List of sequences corresponding to each burst segment. Each sequence is derived from the 
+        center-of-mass calculation of the burst.
+    peaks : list
+        List of peak indices (in samples) where bursts were detected.
+    poprate : np.ndarray
+        The population rate vector computed over the entire time axis of `mat`.
+    """
+    global Tspare  # Tspare should be defined elsewhere in your code (e.g., burst duration in seconds. We used 0.5 sec for the manuscript)
+    random_time = False
+    import random
+
+    # If kwidth is too small, set it to 1/(3*fs) and compute poprate as the simple sum.
+    if kwidth < 1/(3*fs):
+        kwidth = 1/(3*fs)
+        poprate = np.sum(mat, axis=0)
+    else:
+        # Define a time axis for the Gaussian kernel.
+        tax = np.arange(-3 * kwidth, 3 * kwidth, 1/fs)
+        # Convolve the summed activity with a Gaussian kernel.
+        poprate = np.convolve(np.sum(mat, axis=0),
+                              np.exp(-(tax**2) / (2 * kwidth**2)) / kwidth,
+                              mode='same')
+    
+    # Set threshold for burst detection based on mean and standard deviation of poprate.
+    thresh = np.mean(poprate) + sig * np.std(poprate)
+    # 'spare' is the minimum separation (in samples) between detected bursts.
+    spare = int(Tspare * fs)
+    print('Burst length is ', Tspare)
+    
+    vec = []     # List to store burst segments (submatrices)
+    # Use scipy.signal.find_peaks to detect peaks in the population rate.
+    idpeaks, _ = find_peaks(poprate, height=thresh, width=(minwidth, spare * 10), distance=spare)
+    
+    peaks = []   # List to store the final accepted peak indices
+    idprev = -1  # Variable to store the previous accepted peak index
+
+    # Loop over each detected peak.
+    for idpeak in idpeaks:
+        # Check that the current peak is sufficiently separated from the previous one and that a 
+        # burst segment can be extracted without going out of bounds.
+        if (idpeak - idprev > spare) and (idpeak - int(spare/2) >= 0) and (idpeak + int(spare/2) + 1 <= mat.shape[1]):
+            # Extract a burst segment centered at the peak.
+            vtmp = mat[:, idpeak - int(spare/2) : idpeak + int(spare/2) + 1]
+
+            # Optionally, randomize the order of time bins in the burst segment.
+            if random_time:
+                column_indices = np.arange(vtmp.shape[1])
+                np.random.shuffle(column_indices)
+                print('bursts are randomized!!!')
+                vtmp = vtmp[:, column_indices]
+
+            # Only accept burst segments with activity from at least 5 cells.
+            if np.sum(np.sum(vtmp, axis=1) > 0) > 4:
+                vec.append(vtmp)
+                peaks.append(idpeak)  # Record the peak index (in samples)
+                idprev = idpeak
+
+    # If any bursts were detected, set up an index array for the time bins.
+    if len(vec) > 0:
+        itax = np.arange(vec[0].shape[1])
+    else:
+        itax = np.array([])
+
+    seq = []  # List to store the computed sequence for each burst
+    # For each burst segment, compute the "center-of-mass" based sequence.
+    for nv in range(len(vec)):
+        # Sum activity per cell within the burst segment.
+        nvec = np.sum(vec[nv], axis=1)
+        # Compute the weighted average index (center-of-mass) for each cell.
+        cofseq = (itax @ vec[nv].transpose()) / nvec
+        # Get the order of cell activation based on the center-of-mass.
+        tmp = np.argsort(cofseq)
+        # Remove any indices corresponding to NaN values (if any).
+        seq.append(tmp[~np.isnan(np.sort(cofseq))])
+    
+    return vec, seq, peaks, poprate
+
+
+
+
+
+
+# def popbursts(mat,sig,fs,kwidth=0,minwidth=1):
+#     global Tspare
+#     random_time=False
+#     import random
+#     #poprate=np.sum(mat,axis=0)
+#     if kwidth<1/(3*fs):
+#         kwidth=1/(3*fs)
+#         poprate=np.sum(mat,axis=0)
+#     else:
+#         tax=np.arange(-3*kwidth,3*kwidth,1/fs)
+#         poprate=np.convolve(np.sum(mat,axis=0),np.exp(-(tax**2)/2/kwidth**2)/kwidth,'same')
+    
+#     thresh=np.mean(poprate)+sig*np.std(poprate)
+#     spare=int(Tspare*fs)
+#     print('Burst length is ' ,Tspare)
+    
+#     #mask=(poprate>=thresh)*1.
+#     #mask=1.*(np.diff(mask)==1)
+#     #ids=np.where(mask>0)[0]
+    
+#     vec=[]
+    
+#     idpeaks, _ = find_peaks(poprate, height=thresh, width=(minwidth,spare*10), distance=spare)
+    
+#     peaks=[]
+#     idprev=-1
+#     #for n in range(len(ids)):
+#     #
+#     #    id0=ids[n]
+#     #
+#     #    if id0+spare<=mat.shape[1]:
+#     #        idpeak=np.argmax(poprate[id0:id0+spare])+id0
+#     #        if (idpeak-idprev>spare)*(idpeak-int(spare/2)>=0)*(idpeak+int(spare/2)+1<=mat.shape[1]):
+#     #            vtmp=mat[:,idpeak-int(spare/2):idpeak+int(spare/2)+1]
+#     #            if len(np.where(np.sum(vtmp,axis=1)>0)[0])>4:#mimimum 5 active cells
+#     #                vec.append(vtmp)
+#     #                peaks.append(idpeak/fs)
+#     #                idprev=idpeak
+    
+#     for idpeak in idpeaks:
+#         if (idpeak-idprev>spare)*(idpeak-int(spare/2)>=0)*(idpeak+int(spare/2)+1<=mat.shape[1]):
+#             vtmp = mat[:,idpeak-int(spare/2):idpeak+int(spare/2)+1]
+
+#             if random_time:
+#                 column_indices = np.arange(np.shape(vtmp)[1])
+#                 np.random.shuffle(column_indices)
+#                 print('bursts are randomized!!!')
+#                 # Use the shuffled index array to rearrange the columns
+#                 vtmp = vtmp[:, column_indices]
+
+
+
+
+#             if len(np.where(np.sum(vtmp,axis=1)>0)[0])>4:
+#                 vec.append(vtmp)
+#                 #peaks.append(idpeak/fs)
+
+#                 peaks.append(idpeak)# Hamed Chaned
+
+#                 idprev=idpeak
+                
+                
+#     if len(vec)>0:
+        
+#         # if random_time==True:
+#         #     itax=np.arange(vec[0].shape[1])
+#         #     random.shuffle(itax)
+#         #     print('bursts are randomized!!!')
+#         # else:
+
+#         itax=np.arange(vec[0].shape[1])
+
+
+
+#     seq=[]
+#     for nv in range(len(vec)):
+#         nvec=np.sum(vec[nv],axis=1)
+#         cofseq=(itax@vec[nv].transpose())/nvec
+#         tmp=np.argsort(cofseq)
+#         seq.append(tmp[~np.isnan(np.sort(cofseq))])
+                   
+      
+    
+    
+    
+#     return vec,seq,peaks,poprate
+
+
+
+
+
+
+
+
+# def average_sequence(burst_set):
+    
+#     vec=np.mean(burst_set,axis=0)
+#     itax=np.arange(vec.shape[1])
+#     nvec=np.sum(vec,axis=1)
+#     cofseq=(itax@vec.transpose())/nvec
+#     tmp=np.argsort(cofseq)
+#     seq=tmp[~np.isnan(np.sort(cofseq))]
+
+#     return seq,cofseq
+
+
+# def within_across(adj,ids_clust):
+
+#     ret={'within':[], 'across':[]}
+#     for nc in range(len(adj)):
+#         idin = np.where((ids_clust==nc))[0]
+#         idout = np.where(~(ids_clust==nc))[0]
+#         within = np.mean(adj[nc][idin])
+#         across = np.mean(adj[nc][idout])
+#         ret['within'].append(within)
+#         ret['across'].append(across)
+
+#     return ret
+
+# def templates(bursts,seqs,nrm,ids_clust,min_ratio=2):
+
+#     retval={'adj':[], 'template':[], 'clist':[], 'radius':[],'seqs':[],'ids_clust':[], 'bursts':[], 'ratio':[]}
+#     retval['seqs'].append(seqs)# added by Hamed
+#     retval['ids_clust'].append(ids_clust)# added by Hamed
+#     retval['bursts'].append(bursts)# added by Hamed
+
+#     for nc in range(max(ids_clust)+1):
+#         clist=(np.where(ids_clust==nc)[0])
+#         if np.array(bursts).ndim==2:
+#             mns = np.nanmean(np.array(bursts)[clist,:], axis=0)
+#             tmp = np.argsort(mns)
+#             temp = tmp[~np.isnan(np.sort(mns))]
+
+#         elif np.array(bursts).ndim==3:
+#             temp,dummy = average_sequence(np.array(bursts)[clist,:,:])
+            
+#         chck=check_template(seqs,temp,nrm)
+#         radius=np.mean(chck[1])*30
+#         retval['template'].append(temp)
+#         retval['clist'].append(clist)
+#         retval['radius'].append(radius)
+#         retval['adj'].append(chck[1])
+
+
+#     crit = within_across(retval['adj'],ids_clust)
+#     retval.update({'exclude':[]})
+#     for nc in range(len(retval['radius'])):
+#         ratio=crit['within'][nc]/crit['across'][nc]
+#         best_ratio=crit['within'][nc]
+#         #retval['within_ratio'].append(best_ratio)
+#         retval['ratio'].append(ratio)
+
+#         #print(nc, ": ", ratio)
+#         if ratio<min_ratio:
+#             retval['exclude'].append(nc)
                                
                                
-    retval['template'] = [i for j, i in enumerate(retval['template']) if j not in retval['exclude']]# remove bad clusters
-    retval['clist'] = [i for j, i in enumerate(retval['clist']) if j not in retval['exclude']]# remove bad clusters
-    retval['radius'] = [i for j, i in enumerate(retval['radius']) if j not in retval['exclude']]# remove bad clusters
-    retval['adj'] = [i for j, i in enumerate(retval['adj']) if j not in retval['exclude']]# remove bad clusters
-    #retval['ratio'] = [i for j, i in enumerate(retval['ratio']) if j not in retval['exclude']]# remove bad clusters
-    #retval['ids_clust'] = [i for j, i in enumerate(retval['ids_clust']) if j not in retval['exclude']]# remove bad clusters
+#     retval['template'] = [i for j, i in enumerate(retval['template']) if j not in retval['exclude']]# remove bad clusters
+#     retval['clist'] = [i for j, i in enumerate(retval['clist']) if j not in retval['exclude']]# remove bad clusters
+#     retval['radius'] = [i for j, i in enumerate(retval['radius']) if j not in retval['exclude']]# remove bad clusters
+#     retval['adj'] = [i for j, i in enumerate(retval['adj']) if j not in retval['exclude']]# remove bad clusters
+#     #retval['ratio'] = [i for j, i in enumerate(retval['ratio']) if j not in retval['exclude']]# remove bad clusters
+#     #retval['ids_clust'] = [i for j, i in enumerate(retval['ids_clust']) if j not in retval['exclude']]# remove bad clusters
 
 
-    #
-    return retval
+#     #
+#     return retval
 
 
 
@@ -471,40 +1029,124 @@ def graph(seqAll,nrm,temp_info=[],temp_infoD=[]):
 
 
 
-def cluster(bmat,zmat,params):
-    cmat=np.zeros_like(zmat)
-    cmat[~np.isnan(zmat)]=bmat[~np.isnan(zmat)]
+# def cluster(bmat,zmat,params):
+#     cmat=np.zeros_like(zmat)
+#     cmat[~np.isnan(zmat)]=bmat[~np.isnan(zmat)]
 
-    if params['name']=='AHC':
-        fac=params['fac']
-        clnmbr=params['clnbr']
-        pdist=scich.distance.pdist(cmat)
-        lkg=scich.linkage(pdist, method='ward')
-        c_th=np.max(pdist)*fac
-        ids_clust = scich.fcluster(lkg,c_th,criterion='distance')-1
-        #ids_clust = scich.fcluster(lkg,clnmbr,criterion='maxclust')-1
+#     if params['name']=='AHC':
+#         fac=params['fac']
+#         clnmbr=params['clnbr']
+#         pdist=scich.distance.pdist(cmat)
+#         lkg=scich.linkage(pdist, method='ward')
+#         c_th=np.max(pdist)*fac
+#         ids_clust = scich.fcluster(lkg,c_th,criterion='distance')-1
+#         #ids_clust = scich.fcluster(lkg,clnmbr,criterion='maxclust')-1
 
 
-    #gmm = mixture.GaussianMixture( n_components=2, covariance_type="full" ).fit(cmat)
-    #ids_clust = gmm.predict(cmat)
+#     #gmm = mixture.GaussianMixture( n_components=2, covariance_type="full" ).fit(cmat)
+#     #ids_clust = gmm.predict(cmat)
 
-    ## estimate bandwidth for mean shift
-    #bandwidth = cluster2.estimate_bandwidth(cmat, quantile=.5)
-    #ms = cluster2.MeanShift(bandwidth=bandwidth, bin_seeding=True).fit(cmat)
-    #ids_clust = ms.labels_
+#     ## estimate bandwidth for mean shift
+#     #bandwidth = cluster2.estimate_bandwidth(cmat, quantile=.5)
+#     #ms = cluster2.MeanShift(bandwidth=bandwidth, bin_seeding=True).fit(cmat)
+#     #ids_clust = ms.labels_
 
-    #optics = OPTICS(    max_eps=.3).fit(cmat) 
-    #ids_clust=optics.labels_
-    elif params['name']=='DB':
+#     #optics = OPTICS(    max_eps=.3).fit(cmat) 
+#     #ids_clust=optics.labels_
+#     elif params['name']=='DB':
 
-        DBSCAN_cluster = DBSCAN(eps=params['eps'], min_samples=params['min_samples']).fit(cmat) 
-        ids_clust= DBSCAN_cluster.labels_
+#         DBSCAN_cluster = DBSCAN(eps=params['eps'], min_samples=params['min_samples']).fit(cmat) 
+#         ids_clust= DBSCAN_cluster.labels_
 
-    #two_means = cluster2.MiniBatchKMeans(n_clusters = 2).fit(cmat)
-    #ids_clust= two_means.labels_
+#     #two_means = cluster2.MiniBatchKMeans(n_clusters = 2).fit(cmat)
+#     #ids_clust= two_means.labels_
+
+#     return ids_clust
+
+from scipy.cluster import hierarchy as sch
+from scipy.spatial.distance import pdist
+from sklearn.cluster import DBSCAN
+import numpy as np
+
+def cluster(bmat, zmat, params):
+    """
+    Cluster detected sequences based on a similarity matrix.
+
+    This function creates a clustering matrix from `bmat` by using the non-NaN entries 
+    in `zmat` to filter out invalid values. Depending on the specified clustering method in 
+    `params['name']`, it applies either Agglomerative Hierarchical Clustering (AHC) or DBSCAN.
+
+    For AHC (Used for the manuscript):
+      - A pairwise distance matrix is computed from the filtered clustering matrix.
+      - Ward's linkage method is used to perform hierarchical clustering.
+      - The clustering threshold is set as a fraction (`fac`) of the maximum distance in the pairwise distances.
+      - Clusters are formed based on this threshold.
+
+    For DBSCAN:
+      - The DBSCAN algorithm is used directly on the filtered clustering matrix with the 
+        provided `eps` (maximum neighborhood distance) and `min_samples` (minimum number of points).
+
+    Parameters
+    ----------
+    bmat : array_like
+        A matrix representing pairwise similarity or connectivity between sequences.
+    zmat : array_like
+        A matrix of the same shape as `bmat`, where entries are z-scored similarity values.
+        NaN entries in `zmat` indicate invalid or missing comparisons and are used to filter `bmat`.
+    params : dict
+        Dictionary containing clustering parameters. Depending on the method:
+          - For Agglomerative Hierarchical Clustering (AHC):
+              * params['name'] should be 'AHC'
+              * params['fac']: Factor to multiply the maximum pairwise distance to obtain the clustering threshold.
+              * (Optional) params['clnbr']: Expected number of clusters (alternative criterion, currently commented out).
+          - For DBSCAN:
+              * params['name'] should be 'DB'
+              * params['eps']: Maximum distance between two samples for them to be considered as neighbors.
+              * params['min_samples']: Minimum number of samples required to form a cluster.
+
+    Returns
+    -------
+    ids_clust : ndarray
+        An array of cluster labels (starting at 0) assigned to each sequence.
+    """
+    # Create a clustering matrix (cmat) by keeping bmat values only where zmat is valid (not NaN)
+    cmat = np.zeros_like(zmat)
+    cmat[~np.isnan(zmat)] = bmat[~np.isnan(zmat)]
+
+    # Apply clustering based on the selected method
+    if params['name'] == 'AHC':
+        # Extract parameters for hierarchical clustering
+        fac = params['fac']
+        # clnmbr = params['clnbr']  # Alternative: use a fixed number of clusters (commented out)
+        
+        # Compute the pairwise distance matrix from cmat.
+        # pdist returns a condensed distance matrix.
+        pdist_matrix = pdist(cmat)
+        
+        # Perform hierarchical/agglomerative clustering using Ward's method.
+        linkage_matrix = sch.linkage(pdist_matrix, method='ward')
+        
+        # Determine a clustering threshold: a fraction of the maximum pairwise distance.
+        threshold = np.max(pdist_matrix) * fac
+        
+        # Form clusters using the distance criterion.
+        # Subtract 1 so that cluster IDs start at 0.
+        ids_clust = sch.fcluster(linkage_matrix, threshold, criterion='distance') - 1
+        
+        # Alternative: use a fixed number of clusters (commented out)
+        # ids_clust = sch.fcluster(linkage_matrix, clnmbr, criterion='maxclust') - 1
+
+    elif params['name'] == 'DB':
+        # Use DBSCAN clustering with the provided eps and min_samples parameters.
+        dbscan_cluster = DBSCAN(eps=params['eps'], min_samples=params['min_samples']).fit(cmat)
+        ids_clust = dbscan_cluster.labels_
+
+    # Other clustering methods (e.g., Gaussian Mixture Models, MeanShift, OPTICS, KMeans) could be added here.
+    # For example:
+    # gmm = mixture.GaussianMixture(n_components=2, covariance_type="full").fit(cmat)
+    # ids_clust = gmm.predict(cmat)
 
     return ids_clust
-
 
 
 
@@ -1111,11 +1753,28 @@ def smooth_signal(signal, window_size):
 
 
 
+def find_condition(input_nums, condition_dict):
+    """
+    Determine the condition label based on a list of numeric condition identifiers.
 
-def find_condition(input_nums,condition_dict):
+    This function uses a predefined mapping (for "side" and "center" conditions) to convert
+    numeric identifiers into string labels (e.g., 'outward_L', 'inward_R'). It returns the
+    label corresponding to the first matching identifier found in the input list.
 
+    Parameters
+    ----------
+    input_nums : list or array-like
+        A list of numeric identifiers representing potential conditions.
+    condition_dict : dict
+        A dictionary of condition names (reserved for future extensions; currently not used).
 
-    # Create a mapping for keys that have both "side" and "center" suffixes
+    Returns
+    -------
+    str or None
+        The condition label corresponding to the first numeric identifier in input_nums that
+        is found in the predefined mapping, or None if no match is found.
+    """
+    # Predefined mapping for keys that have both "side" and "center" suffixes.
     side_center_mapping = {
         3: 'outward_L',
         2: 'outward_L',
@@ -1127,6 +1786,7 @@ def find_condition(input_nums,condition_dict):
         11: 'inward_R'
     }
 
+    # Find the first numeric value in input_nums that is in the mapping.
     result = [num for num in input_nums if num in side_center_mapping]
 
     if not result:
@@ -1134,289 +1794,439 @@ def find_condition(input_nums,condition_dict):
 
     return side_center_mapping[result[0]]
 
- 
 
+def apply_masks_test(sess_info, Masks, cond_numbers, cond_name, sessin_numbers, odd_even, sess_name, trial_type, phase):
+    """
+    Apply masks to session data to extract data for a specific condition, session, phase, and trial type.
 
+    This function filters the session information (in `sess_info`) using various boolean masks from
+    the `Masks` dictionary. Data is selected based on multiple criteria including:
+      - Trial type (correct or failed)
+      - Phase (e.g., learning or learned)
+      - Condition (e.g., outward, inward) specified by `cond_numbers` and `cond_name`
+      - Session number (from `sessin_numbers` and `sess_name`)
+      - Odd or even trial selection (if specified)
+      - Speed threshold criteria (not used for the manuscript)
 
-def apply_masks_test(sess_info,Masks,cond_numbers,cond_name,sessin_numbers,odd_even,sess_name,trial_type,phase):
+    The filtered data is then returned in a dictionary (`run_data`) containing information such as:
+      - Cluster IDs, burst peak indices, sequences, burst events
+      - Single-cell spike times and condition labels for cells
+      - Trial indices, time vectors, population rates, raw cell traces, position data,
+        spatial coordinates, speed, and firing rates
+      - Session, phase, and condition names
 
-    run_data={'idpeaks_cells':[[] for _ in range(len(sess_info['Spike_times_cells']))],'mask_cond_fr_cells':[[] for _ in range(len(sess_info['Spike_times_cells']))]}
+    Parameters
+    ----------
+    sess_info : dict
+        Dictionary containing session information data. Expected keys include:
+          'Spike_times_cells', 'id_peaks', 'seqs', 'bursts', 'trial_idx_mask',
+          't', 'pop_rate', 'extract', 'lin_pos', 'xloc', 'yloc', 'speed', 'fr', etc.
+    Masks : dict
+        Dictionary containing various boolean masks for filtering the session data. Expected keys include:
+          'odd_even', 'odd_even_seqs', 'odd_even_fr', 'phases', 'bursts_phase', 'fr_phase', 
+          'correct_failed', 'correct_failed_seqs', 'bursts_sess', 'sessions', 'fr_sess', 'cell_phase',
+          'bursts_cond', 'conditions', 'fr_cond', 'cell_cond', 'cell_correct', 'correct_failed_fr',
+          'speed_seq', 'speed'
+    cond_numbers : list or array-like
+        List of numeric condition identifiers to filter conditions (e.g., [3] for outward).
+    cond_name : dict
+        Dictionary mapping condition numbers to condition names.
+    sessin_numbers : list or array-like
+        List of session numbers to include.
+    odd_even : int or None
+        Specify 0 for odd or 1 for even trials; if None, all trials are included.
+    sess_name : dict
+        Dictionary mapping session numbers to session names.
+    trial_type : int
+        Trial type to filter by (1 for correct trials, 0 for failed trials).
+    phase : int or None
+        Phase of the session to filter by (0 for learning, 1 for learned). If None, includes both.
 
+    Returns
+    -------
+    run_data : dict
+        Dictionary containing filtered session data with keys including:
+          'idpeaks_cells', 'mask_cond_fr_cells', 'ids_clust', 'idpeaks', 'seqs', 'bursts',
+          'mask_cond_fr', 'trial_idx_mask', 't', 'poprate', 'trace_cells', 'lin_pos',
+          'conditions', 'x_loc', 'y_loc', 'speed', 'fr', 'spike_idx', 'spike_idx_cells',
+          'sess_name', 'phase_name', 'cond_name'.
+    """
+    # Initialize the output dictionary with empty lists for cell-specific data.
+    run_data = {
+        'idpeaks_cells': [[] for _ in range(len(sess_info['Spike_times_cells']))],
+        'mask_cond_fr_cells': [[] for _ in range(len(sess_info['Spike_times_cells']))]
+    }
 
-    if odd_even != None: 
-        mask_odd= np.asarray(Masks['odd_even'])==odd_even# mask for odd or even trials(0/1)
-        mask_odd_seqs= np.asarray(Masks['odd_even_seqs'])==odd_even# mask for sequences of odd or even trials(0/1)
-        mask_odd_fr= np.asarray(Masks['odd_even_fr'])==odd_even
-
+    # ~~~~~~ Define Masks for Odd/Even Trials ~~~~~~
+    if odd_even is not None:
+        # Masks for odd/even trials (0: odd, 1: even) for different data streams.
+        mask_odd = np.asarray(Masks['odd_even']) == odd_even
+        mask_odd_seqs = np.asarray(Masks['odd_even_seqs']) == odd_even
+        mask_odd_fr = np.asarray(Masks['odd_even_fr']) == odd_even
     else:
-        mask_odd=np.ones(len(Masks['phases'])).astype(bool)# phases should be replaced with real mask of odd or even. its just temproray as i dont use odd even now
-        mask_odd_seqs= np.ones(len(Masks['bursts_phase'])).astype(bool)# mask for sequences of odd or even trials(0/1)
-        mask_odd_fr=  np.ones(len(Masks['fr_phase'])).astype(bool) 
+        # If odd_even is not specified, include all trials.
+        mask_odd = np.ones(len(Masks['phases']), dtype=bool)
+        mask_odd_seqs = np.ones(len(Masks['bursts_phase']), dtype=bool)
+        mask_odd_fr = np.ones(len(Masks['fr_phase']), dtype=bool)
 
+    # ~~~~~~ Define Masks for Phase (Learning vs. Learned) ~~~~~~
+    if phase is not None:
+        mask_phase = np.asarray(Masks['phases']) == phase
+        mask_phase_seqs = np.asarray(Masks['bursts_phase']) == phase
+        # For each cell, create a mask for the phase.
+        mask_phase_cell = [np.asarray(x) == phase for x in Masks['cell_phase']]
+        mask_phase_fr = np.asarray(Masks['fr_phase']) == phase
 
-
-
-    if phase != None:
-        mask_phase= np.asarray(Masks['phases'])==phase# learning or learned
-        mask_phase_seqs= np.asarray(Masks['bursts_phase'])==phase
-        #mask_phase_cell= np.asarray(Masks['cell_phase'][celid])==phase
-        mask_phase_cell= [ np.asarray(x) == phase for x in Masks['cell_phase'] ]
-
-
-        mask_phase_fr= np.asarray(Masks['fr_phase'])==phase
-
-        if phase==0:
-            phase_name='learning'
-        elif phase==1:
-            phase_name='learned'
+        # Define a human-readable phase name.
+        phase_name = 'learning' if phase == 0 else 'learned'
     else:
-        mask_phase=np.ones(len(Masks['phases'])).astype(bool)# both learning and learned
-        mask_phase_seqs=np.ones(len(Masks['bursts_phase'])).astype(bool)# both learning and learned
-        #mask_phase_cell=np.ones(len(Masks['cell_phase'][celid])).astype(bool)# both learning and learned
-        mask_phase_cell=[np.ones(len(x)).astype(bool) for x in Masks['cell_phase'] ]
-        mask_phase_fr=np.ones(len(Masks['fr_phase'])).astype(bool)# both learning and learned
+        # Include both phases if phase is None.
+        mask_phase = np.ones(len(Masks['phases']), dtype=bool)
+        mask_phase_seqs = np.ones(len(Masks['bursts_phase']), dtype=bool)
+        mask_phase_cell = [np.ones(len(x), dtype=bool) for x in Masks['cell_phase']]
+        mask_phase_fr = np.ones(len(Masks['fr_phase']), dtype=bool)
+        phase_name = 'learning and learned'
 
+    # ~~~~~~ Define Masks for Correct/Failed Trials ~~~~~~
+    mask_correct = np.asarray(Masks['correct_failed']) == trial_type
+    mask_correct_seqs = np.asarray(Masks['correct_failed_seqs']) == trial_type
 
-        phase_name='learning and learned'
-
-
-
-    mask_correct= np.asarray(Masks['correct_failed'])==trial_type# mask for correct or failed trials(0/1)
-    mask_correct_seqs= np.asarray(Masks['correct_failed_seqs'])==trial_type
-
-    #sessin_number=2
-    #celid=11
-
-    mask_sess_burst=np.zeros_like(np.asarray(Masks['bursts_sess'])).astype(bool)
-    #mask_sess_cell=np.zeros_like(np.asarray(Masks['cell_sess'][celid])).astype(bool)
-    mask_sess_t=np.zeros_like(np.asarray(Masks['sessions'])).astype(bool)
-    mask_sess_fr=np.zeros_like(np.asarray(Masks['fr_sess'])).astype(bool)
-    sess_names=str()
+    # ~~~~~~ Define Masks for Session Number ~~~~~~
+    mask_sess_burst = np.zeros_like(np.asarray(Masks['bursts_sess']), dtype=bool)
+    mask_sess_t = np.zeros_like(np.asarray(Masks['sessions']), dtype=bool)
+    mask_sess_fr = np.zeros_like(np.asarray(Masks['fr_sess']), dtype=bool)
+    sess_names = str()
+    # Loop through the desired session numbers to build session masks.
     for sess_nbr in sessin_numbers:
-        mask_sess_burst+= np.asarray(Masks['bursts_sess'])==sess_nbr
-        #mask_sess_cell+= np.asarray( Masks['cell_sess'][celid])==sess_nbr
-        mask_sess_t+= np.asarray(Masks['sessions'])==sess_nbr
-        mask_sess_fr+= np.asarray(Masks['fr_sess'])==sess_nbr
-        sess_name_=list(sess_name.keys())[sess_nbr]
-        sess_names= sess_names+ ' and '  +sess_name_[:-4]
+        mask_sess_burst |= np.asarray(Masks['bursts_sess']) == sess_nbr
+        mask_sess_t |= np.asarray(Masks['sessions']) == sess_nbr
+        mask_sess_fr |= np.asarray(Masks['fr_sess']) == sess_nbr
+        # Extract the session name (remove file extension from key).
+        sess_name_ = list(sess_name.keys())[sess_nbr]
+        sess_names += ' and ' + sess_name_[:-4]
 
-    mask_sess_cell=[ np.zeros_like(np.asarray(x)).astype(bool) for x in Masks['cell_phase'] ]
-
-
+    # Build mask for each cell based on session number.
+    mask_sess_cell = [np.zeros_like(np.asarray(x), dtype=bool) for x in Masks['cell_phase']]
     for celid in range(len(mask_sess_cell)):
         for sess_nbr in sessin_numbers:
-            mask_sess_cell[celid]+= np.asarray( Masks['cell_sess'][celid])==sess_nbr
+            mask_sess_cell[celid] |= np.asarray(Masks['cell_sess'][celid]) == sess_nbr
 
-
-
-
-
-    mask_cond_burst_side=np.zeros_like(np.asarray(Masks['bursts_cond'])).astype(bool)
-    #mask_cond_cell_side=np.zeros_like(np.asarray(Masks['cell_cond'][celid])).astype(bool)
-    mask_cond_t_side=np.zeros_like(np.asarray(Masks['conditions'])).astype(bool)
-    mask_cond_fr=np.zeros_like(np.asarray(Masks['fr_cond'])).astype(bool)
-
-    cond_names=str()
+    # ~~~~~~ Define Masks for Condition ~~~~~~
+    mask_cond_burst_side = np.zeros_like(np.asarray(Masks['bursts_cond']), dtype=bool)
+    mask_cond_t_side = np.zeros_like(np.asarray(Masks['conditions']), dtype=bool)
+    mask_cond_fr = np.zeros_like(np.asarray(Masks['fr_cond']), dtype=bool)
+    cond_names = str()
+    # Loop through the desired condition numbers to build condition masks.
     for cond_nbr in cond_numbers:
-        mask_cond_burst_side += np.asarray(Masks['bursts_cond'])==cond_nbr
-        #mask_cond_cell_side += np.asarray(Masks['cell_cond'][celid])==cond_nbr
-        mask_cond_t_side += np.asarray(Masks['conditions'])==cond_nbr
-        mask_cond_fr += np.asarray(Masks['fr_cond'])==cond_nbr
-        cond_name_=list(cond_name.keys())[cond_nbr]
-        cond_names= cond_names+ ' and '  +cond_name_
+        mask_cond_burst_side |= np.asarray(Masks['bursts_cond']) == cond_nbr
+        mask_cond_t_side |= np.asarray(Masks['conditions']) == cond_nbr
+        mask_cond_fr |= np.asarray(Masks['fr_cond']) == cond_nbr
+        cond_name_ = list(cond_name.keys())[cond_nbr]
+        cond_names += ' and ' + cond_name_
 
-
-
-    mask_cond_cell=[ np.zeros_like(x).astype(bool) for x in Masks['cell_cond'] ]
+    # Build mask for each cell based on condition.
+    mask_cond_cell = [np.zeros_like(x, dtype=bool) for x in Masks['cell_cond']]
     for celid in range(len(mask_cond_cell)):
         for cond_nbr in cond_numbers:
-            mask_cond_cell[celid] += np.asarray(Masks['cell_cond'][celid])==cond_nbr
+            mask_cond_cell[celid] |= np.asarray(Masks['cell_cond'][celid]) == cond_nbr
 
+    mask_correct_fr = np.asarray(Masks['correct_failed_fr']) == trial_type
 
+    # For burst conditions, use the side mask.
+    mask_cond_burst = mask_cond_burst_side
+    mask_cond_t = mask_cond_t_side
 
+    # ~~~~~~ Apply Combined Masks to Session Data ~~~~~~
+    # Use logical AND (&) to combine multiple masks for bursts and sequences.
+    run_data = dict()
+    run_data['ids_clust'] = np.asarray(sess_info['ids_clust'])[
+        mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']
+    ]
+    run_data['idpeaks'] = np.asarray(sess_info['id_peaks'])[
+        mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']
+    ]
+    run_data['seqs'] = np.asarray(sess_info['seqs'])[
+        mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']
+    ]
+    run_data['bursts'] = np.asarray(sess_info['bursts'])[
+        mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']
+    ]
+    run_data['mask_cond_fr'] = np.asarray(Masks['bursts_cond'])[
+        mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']
+    ]
 
-    # cond_number=cond_number1 # 'outward_L_side'
-    # mask_cond_burst_side= np.asarray(Masks['bursts_cond'])==cond_number
-    # mask_cond_cell_side= np.asarray(Masks['cell_cond'][celid])==cond_number
-
-    # mask_cond_t_side= np.asarray(Masks['conditions'])==cond_number
-    # mask_cond_fr= np.asarray(Masks['fr_cond'])==cond_number
-
-
-
-
-    mask_correct_fr= np.asarray(Masks['correct_failed_fr'])==trial_type
-
-
-
-    # conndname1=list(cond_names.keys())[cond_number]
-
-
-
-    # cond_number=cond_number2 # 'outward_L_center'
-    # mask_cond_burst_center= np.asarray(Masks['bursts_cond'])==cond_number
-    # mask_cond_cell_center= np.asarray(Masks['cell_cond'][celid])==cond_number
-
-    # mask_cond_t_center= np.asarray(Masks['conditions'])==cond_number
-    # conndname2=list(cond_names.keys())[cond_number]
-
-
-    mask_cond_burst= mask_cond_burst_side
-    #mask_cond_cell= mask_cond_cell_side
-    mask_cond_t= mask_cond_t_side
-
-    
-    run_data['ids_clust']=np.asarray(sess_info['ids_clust'])[mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']]
-    run_data['idpeaks']=np.asarray(sess_info['id_peaks'])[mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']]
-    run_data['seqs']=np.asarray(sess_info['seqs'])[mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']]
-    run_data['bursts']=np.asarray(sess_info['bursts'])[mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']]
-
-
-    #run_data['mask_cond_t']= np.asarray(Masks['conditions'])[mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']]
-
-    #run_data['mask_cond_fr']=np.asarray(Masks['fr_cond'])[mask_sess_fr & mask_cond_fr &  mask_correct_fr & mask_phase_fr]
-    run_data['mask_cond_fr']=np.asarray(Masks['bursts_cond'])[mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']]
-
-    #run_data['idpeaks_cells']=np.asarray(sess_info['Spike_times_cells'][celid])[mask_sess_cell & mask_cond_cell & mask_phase_cell]
-
+    # Process cell-specific data: spike times and condition labels.
     for celid in range(len(sess_info['Spike_times_cells'])):
-        msk_crct=np.asarray(Masks['cell_correct'][celid])==bool(trial_type)
-        run_data['idpeaks_cells'][celid] = np.asarray(sess_info['Spike_times_cells'][celid])[msk_crct  & mask_sess_cell[celid] & mask_cond_cell[celid] & mask_phase_cell[celid]]
-        run_data['mask_cond_fr_cells'][celid] = np.asarray(Masks['cell_cond'][celid])[msk_crct  & mask_sess_cell[celid] & mask_cond_cell[celid] & mask_phase_cell[celid]]
+        msk_crct = np.asarray(Masks['cell_correct'][celid]) == bool(trial_type)
+        run_data['idpeaks_cells'][celid] = np.asarray(sess_info['Spike_times_cells'][celid])[
+            msk_crct & mask_sess_cell[celid] & mask_cond_cell[celid] & mask_phase_cell[celid]
+        ]
+        run_data['mask_cond_fr_cells'][celid] = np.asarray(Masks['cell_cond'][celid])[
+            msk_crct & mask_sess_cell[celid] & mask_cond_cell[celid] & mask_phase_cell[celid]
+        ]
 
+    # Combine masks for trial indices, time, and population rate.
+    run_data['trial_idx_mask'] = np.asarray(sess_info['trial_idx_mask'])[
+        mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']
+    ]
+    run_data['t'] = np.asarray(sess_info['t'])[
+        mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']
+    ]
+    run_data['poprate'] = np.asarray(sess_info['pop_rate'])[
+        mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']
+    ]
+    # Extract raw traces for all cells.
+    run_data['trace_cells'] = np.asarray([
+        x[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
+        for x in sess_info['extract']
+    ])
+    run_data['lin_pos'] = np.asarray(sess_info['lin_pos'])[
+        mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']
+    ]
+    run_data['conditions'] = np.asarray(Masks['conditions'])[
+        mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']
+    ]
+    run_data['x_loc'] = np.asarray(sess_info['xloc'])[
+        mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']
+    ]
+    run_data['y_loc'] = np.asarray(sess_info['yloc'])[
+        mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']
+    ]
+    run_data['speed'] = np.asarray(sess_info['speed'])[
+        mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']
+    ]
+    run_data['fr'] = np.asarray(sess_info['fr'])[
+        mask_sess_fr & mask_cond_fr & mask_correct_fr & mask_phase_fr
+    ]
 
+    # Get all time points for the selected trials.
+    t_all = np.asarray(sess_info['t'])[
+        mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase
+    ]
+    # Find spike times for the population.
+    spk_times = np.where(np.isin(t_all, run_data['idpeaks']))
+    # Find spike times for each cell.
+    spk_times_cell = [np.where(np.isin(t_all, x)) for x in run_data['idpeaks_cells']]
 
-
-   
-    run_data['trial_idx_mask']=np.asarray(sess_info['trial_idx_mask'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
-
-    run_data['t']=np.asarray(sess_info['t'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
-    run_data['poprate']=np.asarray(sess_info['pop_rate'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
-    cell_trace_sess1=np.asarray(sess_info['extract'][celid])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']] 
-
-    run_data['trace_cells']=np.asarray([x[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']] for x in sess_info['extract']])# raw trace of all cells
-
-    run_data['lin_pos']=np.asarray(sess_info['lin_pos'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
-
-    run_data['conditions']=np.asarray(Masks['conditions'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
-
-
-    run_data['x_loc']=np.asarray(sess_info['xloc'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
-    run_data['y_loc']=np.asarray(sess_info['yloc'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
-    run_data['speed']=np.asarray(sess_info['speed'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase & Masks['speed']]
-
-    
-
-    run_data['fr']=np.asarray(sess_info['fr'])[mask_sess_fr & mask_cond_fr &  mask_correct_fr & mask_phase_fr]
-
-
-    t_all=np.asarray(sess_info['t'])[mask_sess_t & mask_cond_t & mask_odd & mask_correct & mask_phase ]
-
-    spk_times=np.where(np.isin(t_all,run_data['idpeaks']))# time of spike for population rate in the determined condtions
-    
-    #spk_times=t_all[np.isin(t_all,run_data['idpeaks'])]
-
-    spk_times_cell= [np.where(np.isin(t_all,x)) for x in run_data['idpeaks_cells']]
-
+    # (Optional) Plotting code for verification can be enabled here.
     if 0:
+        import matplotlib.pyplot as plt
         plt.figure()
         plt.plot(run_data['lin_pos'])
-        if len (run_data['poprate'])>0:
-            plt.plot(run_data['poprate']/np.max(run_data['poprate']))
+        if len(run_data['poprate']) > 0:
+            plt.plot(run_data['poprate'] / np.max(run_data['poprate']))
+        plt.eventplot(spk_times, lineoffsets=1, color='r')
+        plt.eventplot(spk_times_cell[celid], lineoffsets=2, color='k')
+        plt.plot(2 + sess_info['extract'][celid] / 10)
 
-        plt.eventplot(spk_times,lineoffsets=1,color='r')
-        plt.eventplot(spk_times_cell[celid],lineoffsets=2,color='k')
-        plt.plot(2+cell_trace_sess1/10)
+    # Save spike index data and additional session/condition names.
+    run_data['spike_idx'] = spk_times
+    run_data['spike_idx_cells'] = spk_times_cell
+    run_data['sess_name'] = sess_names
+    run_data['phase_name'] = phase_name
+    run_data['cond_name'] = cond_names
 
-
-    run_data['spike_idx']=spk_times
-    run_data['spike_idx_cells']=spk_times_cell
-    run_data['sess_name']=sess_names
-    run_data['phase_name']=phase_name
-    run_data['cond_name']=cond_names
-
-    return(run_data)
-
+    return run_data
 
 
 
-def pc_faction_in_sequnce(Masks,sess_info,sig_pc_idx_ph,cond_names):
-    '''This function finds the precentage of the cells in a sequence that are place cells.
 
-''' 
-    PC_frac_in_seq={}
-    tasks=['sampling','outward','reward','inward']
 
-    cnt=-1
-    for phs in range(2):# learned 
-        PC_frac_in_seq_corr={}
+# def pc_faction_in_sequnce(Masks,sess_info,sig_pc_idx_ph,cond_names):
+#     '''This function finds the precentage of the cells in a sequence that are place cells.
+
+# ''' 
+#     PC_frac_in_seq={}
+#     tasks=['sampling','outward','reward','inward']
+
+#     cnt=-1
+#     for phs in range(2):# learned 
+#         PC_frac_in_seq_corr={}
         
-        for correct in range(2):# correct trials
+#         for correct in range(2):# correct trials
 
 
-            #fig, ax = plt.subplots(3, 1, figsize=(7, 10))
+#             #fig, ax = plt.subplots(3, 1, figsize=(7, 10))
 
-            cnt=cnt+1
-            if phs==1:
-                mode='learned'
-            else:
-                mode='learning'
+#             cnt=cnt+1
+#             if phs==1:
+#                 mode='learned'
+#             else:
+#                 mode='learning'
 
-            if correct==1:
-                typoftrial='correct_trials'
-            else:
-                typoftrial='failed_trials'
+#             if correct==1:
+#                 typoftrial='correct_trials'
+#             else:
+#                 typoftrial='failed_trials'
 
-            sig_pc_idx=sig_pc_idx_ph[mode]# the indices of the si/pc/tc cells from learning or learned
+#             sig_pc_idx=sig_pc_idx_ph[mode]# the indices of the si/pc/tc cells from learning or learned
 
-            ph_mask=np.asarray(Masks['bursts_phase'])==phs
-            correct_mask=np.asarray(Masks['correct_failed_seqs'])==correct
-
-
-            cond_seqs={}
-            pc_ratio={}
-            seq_len={}
-            pc_ratio2={}
+#             ph_mask=np.asarray(Masks['bursts_phase'])==phs
+#             correct_mask=np.asarray(Masks['correct_failed_seqs'])==correct
 
 
+#             cond_seqs={}
+#             pc_ratio={}
+#             seq_len={}
+#             pc_ratio2={}
 
+
+
+#             for itsk, tsk in enumerate(tasks):
+#                 mskcnd=np.zeros_like(Masks['bursts_cond']).astype(bool)
+#                 #mskcnd=np.zeros_like(Masks['bursts_cond'],type=bool)
+#                 for icond, condname_r in enumerate(cond_names):
+#                     if tsk in condname_r:
+#                         #print(cond_names[condname_r])
+#                         mskcnd+=(np.asarray(Masks['bursts_cond'])==cond_names[condname_r])
+#                 cond_seqs[tsk]=np.asarray(sess_info['seqs'])[mskcnd & correct_mask & ph_mask] 
+
+
+#             #selected_seqs = np.asarray(sess_info['seqs'])[(np.asarray(Masks['bursts_cond'])==8)|(np.asarray(Masks['bursts_cond'])==9)|(np.asarray(Masks['bursts_cond'])==10)|(np.asarray(Masks['bursts_cond'])==11)]
+
+
+#                 title=tsk
+#                 pc_seq_lengh=np.zeros(len(cond_seqs[tsk]))# precentage of place cells that are contibuted in a sequence
+
+#                 pc_seq_ratio=np.zeros(len(cond_seqs[tsk]))# precentage of place cells that are contibuted in a sequence
+#                 seq_pc_ratio=np.zeros(len(cond_seqs[tsk]))# precentage of sequences that are place cells 
+#                 if len(cond_seqs[tsk])>0:
+#                     len_seq_max=np.max([len(x) for x in cond_seqs[tsk]])
+#                 for iseq,seq in enumerate(cond_seqs[tsk]):
+#                     pc_seq_ratio[iseq]=(np.sum(np.isin(seq,sig_pc_idx))/len(sig_pc_idx[0]))# how many precent of the place cells conributed in this sequence
+#                     seq_pc_ratio[iseq]=(np.sum(np.isin(seq,sig_pc_idx))/len(seq))# how many precents of the cells in this sequence are place cells
+#                     pc_seq_lengh[iseq]=(len(seq))
+
+#                 pc_ratio[tsk]=seq_pc_ratio
+#                 seq_len[tsk]=pc_seq_lengh
+#                 pc_ratio2[tsk]=pc_seq_ratio
+
+
+#                 # PC_frac_in_seq[tsk]=pc_seq_lengh
+#                 # PC_frac_in_seq[tsk]=pc_seq_ratio
+#             PC_frac_in_seq_corr[typoftrial]= pc_ratio  
+        
+#         PC_frac_in_seq[mode]=PC_frac_in_seq_corr
+#     return PC_frac_in_seq
+
+def pc_faction_in_sequnce(Masks, sess_info, sig_pc_idx_ph, cond_names):
+    """
+    Compute the fraction of place cells present in sequences for each task, phase, and trial type.
+
+    This function calculates two types of ratios for sequences:
+      1. The fraction of all identified place cells (from sig_pc_idx_ph) that appear in a given sequence.
+      2. The fraction of cells in a sequence that are identified as place cells.
+      
+    For each phase (learning and learned) and for each trial type (correct and failed), the function:
+      - Applies phase and trial masks to select the appropriate sequences.
+      - Divides sequences into tasks based on condition masks (e.g., sampling, outward, reward, inward).
+      - Computes the percentage of place cells in each sequence (i.e., the ratio of place cells in the 
+        sequence relative to the total number of cells in that sequence).
+
+    Parameters
+    ----------
+    Masks : dict
+        Dictionary containing various boolean masks. Expected keys include:
+          - 'bursts_phase': mask for the phase (0 for learning, 1 for learned)
+          - 'correct_failed_seqs': mask for trial type (0 for failed, 1 for correct)
+          - 'bursts_cond': mask for condition numbers for each burst
+    sess_info : dict
+        Dictionary containing session information. It must include:
+          - 'seqs': a list/array of sequences, where each sequence is an array of cell indices.
+    sig_pc_idx_ph : dict
+        Dictionary with keys 'learning' and 'learned'. Each entry contains an array (or list of arrays)
+        of indices corresponding to cells identified as place cells in that phase.
+    cond_names : dict
+        Dictionary mapping condition names to numeric codes. These codes are used to filter sequences
+        based on the task (e.g., {'sampling': code1, 'outward': code2, ...}).
+
+    Returns
+    -------
+    PC_frac_in_seq : dict
+        A nested dictionary where:
+          - Outer keys are phases ('learning' or 'learned').
+          - Each value is another dictionary with keys 'correct_trials' and 'failed_trials'.
+          - These, in turn, are dictionaries mapping task names ('sampling', 'outward', 'reward', 'inward')
+            to arrays. Each array contains, for each sequence of that task, the percentage of cells in the
+            sequence that are place cells.
+    """
+    # Initialize output dictionary for the percentages
+    PC_frac_in_seq = {}
+    # Define tasks to be evaluated
+    tasks = ['sampling', 'outward', 'reward', 'inward']
+
+    cnt = -1  # Counter (optional, can be used for debugging/plotting)
+    
+    # Loop over the two phases (0: learning, 1: learned)
+    for phs in range(2):
+        # Create a temporary dictionary for the current phase
+        PC_frac_in_seq_corr = {}
+        
+        # Loop over trial types: 0 for failed and 1 for correct
+        for correct in range(2):
+            cnt = cnt + 1  # Update counter (if needed for debugging)
+
+            # Determine mode string based on phase
+            mode = 'learned' if phs == 1 else 'learning'
+            # Determine trial type string based on correctness
+            typoftrial = 'correct_trials' if correct == 1 else 'failed_trials'
+
+            # Get the indices of place cells for the current phase
+            sig_pc_idx = sig_pc_idx_ph[mode]
+
+            # Build phase and trial masks
+            ph_mask = np.asarray(Masks['bursts_phase']) == phs
+            correct_mask = np.asarray(Masks['correct_failed_seqs']) == correct
+
+            # Dictionaries to store condition-specific sequences and computed ratios
+            cond_seqs = {}
+            pc_ratio = {}    # Fraction of cells in the sequence that are place cells
+            seq_len = {}     # Length of each sequence (optional, for further analysis)
+            pc_ratio2 = {}   # Fraction of all place cells that appear in the sequence (alternative metric)
+
+            # Loop over each task (e.g., sampling, outward, etc.)
             for itsk, tsk in enumerate(tasks):
-                mskcnd=np.zeros_like(Masks['bursts_cond']).astype(bool)
-                #mskcnd=np.zeros_like(Masks['bursts_cond'],type=bool)
+                # Initialize a mask for the current condition/task
+                mskcnd = np.zeros_like(Masks['bursts_cond'], dtype=bool)
+                # Loop over condition names to add to the mask if they match the task
                 for icond, condname_r in enumerate(cond_names):
                     if tsk in condname_r:
-                        #print(cond_names[condname_r])
-                        mskcnd+=(np.asarray(Masks['bursts_cond'])==cond_names[condname_r])
-                cond_seqs[tsk]=np.asarray(sess_info['seqs'])[mskcnd & correct_mask & ph_mask] 
+                        # Add the mask corresponding to the current condition number
+                        mskcnd |= (np.asarray(Masks['bursts_cond']) == cond_names[condname_r])
+                # Select sequences that satisfy the condition, trial, and phase masks
+                cond_seqs[tsk] = np.asarray(sess_info['seqs'])[mskcnd & correct_mask & ph_mask]
 
+                # Initialize arrays to hold computed ratios for each sequence in the task
+                pc_seq_lengh = np.zeros(len(cond_seqs[tsk]))   # Sequence lengths
+                pc_seq_ratio = np.zeros(len(cond_seqs[tsk]))     # Ratio: (place cells / total place cells)
+                seq_pc_ratio = np.zeros(len(cond_seqs[tsk]))     # Ratio: (place cells in sequence / sequence length)
 
-            #selected_seqs = np.asarray(sess_info['seqs'])[(np.asarray(Masks['bursts_cond'])==8)|(np.asarray(Masks['bursts_cond'])==9)|(np.asarray(Masks['bursts_cond'])==10)|(np.asarray(Masks['bursts_cond'])==11)]
+                # Determine the maximum sequence length for current task (optional)
+                if len(cond_seqs[tsk]) > 0:
+                    len_seq_max = np.max([len(x) for x in cond_seqs[tsk]])
+                
+                # Process each sequence
+                for iseq, seq in enumerate(cond_seqs[tsk]):
+                    # Ratio of place cells (from sig_pc_idx) that are present in the sequence relative to total place cells
+                    pc_seq_ratio[iseq] = (np.sum(np.isin(seq, sig_pc_idx)) / len(sig_pc_idx[0]))
+                    # Ratio of cells in the sequence that are identified as place cells
+                    seq_pc_ratio[iseq] = (np.sum(np.isin(seq, sig_pc_idx)) / len(seq))
+                    # Store the sequence length
+                    pc_seq_lengh[iseq] = len(seq)
 
+                # Save computed ratios for the task.
+                # Here we choose to store the fraction of sequence cells that are place cells.
+                pc_ratio[tsk] = seq_pc_ratio
+                seq_len[tsk] = pc_seq_lengh
+                pc_ratio2[tsk] = pc_seq_ratio  # Alternatively, store the ratio of all place cells found
 
-                title=tsk
-                pc_seq_lengh=np.zeros(len(cond_seqs[tsk]))# precentage of place cells that are contibuted in a sequence
+            # Store the results for the current trial type (correct or failed)
+            PC_frac_in_seq_corr[typoftrial] = pc_ratio
 
-                pc_seq_ratio=np.zeros(len(cond_seqs[tsk]))# precentage of place cells that are contibuted in a sequence
-                seq_pc_ratio=np.zeros(len(cond_seqs[tsk]))# precentage of sequences that are place cells 
-                if len(cond_seqs[tsk])>0:
-                    len_seq_max=np.max([len(x) for x in cond_seqs[tsk]])
-                for iseq,seq in enumerate(cond_seqs[tsk]):
-                    pc_seq_ratio[iseq]=(np.sum(np.isin(seq,sig_pc_idx))/len(sig_pc_idx[0]))# how many precent of the place cells conributed in this sequence
-                    seq_pc_ratio[iseq]=(np.sum(np.isin(seq,sig_pc_idx))/len(seq))# how many precents of the cells in this sequence are place cells
-                    pc_seq_lengh[iseq]=(len(seq))
+        # Store the results for the current phase (learning or learned)
+        PC_frac_in_seq[mode] = PC_frac_in_seq_corr
 
-                pc_ratio[tsk]=seq_pc_ratio
-                seq_len[tsk]=pc_seq_lengh
-                pc_ratio2[tsk]=pc_seq_ratio
-
-
-                # PC_frac_in_seq[tsk]=pc_seq_lengh
-                # PC_frac_in_seq[tsk]=pc_seq_ratio
-            PC_frac_in_seq_corr[typoftrial]= pc_ratio  
-        
-        PC_frac_in_seq[mode]=PC_frac_in_seq_corr
     return PC_frac_in_seq
-
 
 
 import scipy.stats as stats
@@ -1433,6 +2243,7 @@ from scipy.ndimage import gaussian_filter1d
 
 
 def plot_kl_distributions_ss(js_divergence_ss,p_value_corr_js_,name,type='Correct'):
+    # plot kl distrinutions
     plt.figure(figsize=(6, 4))
     # Define the bins for both histograms
     bins = np.linspace(0, max(max(js_divergence_ss[type]), max(js_divergence_ss[type+'_sh'])), 20)

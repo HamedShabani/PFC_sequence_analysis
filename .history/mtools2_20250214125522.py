@@ -33,6 +33,9 @@ def extract_seq(times):
     stimes=np.sort(times)
     ids=np.argsort(times)
     return ids[np.where(~np.isnan(stimes))[0]], ids
+
+
+
     
 def rankseq(s1,s2):
 
@@ -173,7 +176,7 @@ def allmot(seqs,nrm):
             bmat[ms,ns]=1.*(ztmp>mns[3])
 
         nsig[ns] = np.nansum(bmat[ns,:])
-        pval[ns] = 1-binom.cdf(nsig[ns],nseqs-1,.05)# i will change pvalue from .05 to 0.01 for merging(hamed 02.02.2023)
+        pval[ns] = 1-binom.cdf(nsig[ns],nseqs-1,.05)
 
 
     rep_index = nsig/np.std(nsig)
@@ -216,6 +219,23 @@ def check_template(seqs,tmpl,nrm):
     return zval,sig
 
 
+def spiketimes_to_mat(st,fs):
+    ncells=len(st)
+    Tmax=0
+    for n in range(ncells):
+        #print(n, np.max(st[n]))
+        if len(st[n])>0:
+            Tmax=np.max([Tmax, np.max(st[n])])
+
+    nbins=int(np.ceil(Tmax*fs))
+    mat=np.zeros((ncells,nbins))
+    #
+    for n in range(ncells):
+        if len(st[n])>0:
+            ids=np.floor(np.array(st[n])*fs).astype(int)
+            mat[n,ids]=1
+    
+    return mat
 
 
 

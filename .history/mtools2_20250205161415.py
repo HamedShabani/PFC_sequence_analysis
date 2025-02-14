@@ -216,6 +216,23 @@ def check_template(seqs,tmpl,nrm):
     return zval,sig
 
 
+def spiketimes_to_mat(st,fs):
+    ncells=len(st)
+    Tmax=0
+    for n in range(ncells):
+        #print(n, np.max(st[n]))
+        if len(st[n])>0:
+            Tmax=np.max([Tmax, np.max(st[n])])
+
+    nbins=int(np.ceil(Tmax*fs))
+    mat=np.zeros((ncells,nbins))
+    #
+    for n in range(ncells):
+        if len(st[n])>0:
+            ids=np.floor(np.array(st[n])*fs).astype(int)
+            mat[n,ids]=1
+    
+    return mat
 
 
 
