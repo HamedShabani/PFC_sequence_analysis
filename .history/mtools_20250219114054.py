@@ -1989,7 +1989,6 @@ def apply_masks_test(sess_info, Masks, cond_numbers, cond_name, sessin_numbers, 
         'idpeaks_cells': [[] for _ in range(len(sess_info['Spike_times_cells']))],
         'mask_cond_fr_cells': [[] for _ in range(len(sess_info['Spike_times_cells']))]
     }
-
     # ~~~~~~ Define Masks for Odd/Even Trials ~~~~~~
     if odd_even is not None:
         # Masks for odd/even trials (0: odd, 1: even) for different data streams.

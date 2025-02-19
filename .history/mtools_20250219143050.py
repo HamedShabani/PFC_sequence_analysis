@@ -24,15 +24,6 @@ from scipy.stats import entropy
 from scipy.signal import find_peaks
 from helper_functions import separate_in,separate_in_2d_array,linearize_2d_track_single_run
 import os
-import numpy as np
-import copy
-from scipy.stats import binom
-import matplotlib.pyplot as plt
-
-
-import numpy as np
-from scipy.signal import find_peaks
-
 Tspare=.5
 
 
@@ -192,6 +183,7 @@ def extract_seq(times):
 
 
 #     return rep_index, nsig, pval, bmat, zmat, corrmat
+import numpy as np
 
 def rankseq(s1, s2):
     """
@@ -579,6 +571,10 @@ def within_across(adj, ids_clust):
 
     return ret
 
+
+
+import numpy as np
+from scipy.signal import find_peaks
 
 def binned_burst(dt, winlen, thr_burts, fs, timewins):
     """

@@ -431,7 +431,6 @@ def mean_rate2(all_rates_L, P_x_f, num_neurons):
     >>> r0, = mean_rate2(all_rates_L, P_x_f, num_neurons)
     >>> print("Weighted mean firing rates:", r0)
     """
-    import numpy as np
 
     r0_f = np.zeros(num_neurons)
 
@@ -619,7 +618,7 @@ def compute_corrleation(sorted_l, sorted_r):
     >>> print("Correlation for stem:", sim_stem)
     >>> print("Overall correlation:", sim_all)
     """
-    import numpy as np
+
 
     eps = 0  # Small constant to avoid NaNs (e.g., set to 1e-9 if needed)
 

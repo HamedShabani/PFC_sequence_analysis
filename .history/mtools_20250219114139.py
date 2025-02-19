@@ -24,15 +24,6 @@ from scipy.stats import entropy
 from scipy.signal import find_peaks
 from helper_functions import separate_in,separate_in_2d_array,linearize_2d_track_single_run
 import os
-import numpy as np
-import copy
-from scipy.stats import binom
-import matplotlib.pyplot as plt
-
-
-import numpy as np
-from scipy.signal import find_peaks
-
 Tspare=.5
 
 
@@ -192,6 +183,7 @@ def extract_seq(times):
 
 
 #     return rep_index, nsig, pval, bmat, zmat, corrmat
+import numpy as np
 
 def rankseq(s1, s2):
     """
@@ -579,6 +571,10 @@ def within_across(adj, ids_clust):
 
     return ret
 
+
+
+import numpy as np
+from scipy.signal import find_peaks
 
 def binned_burst(dt, winlen, thr_burts, fs, timewins):
     """
@@ -1427,7 +1423,10 @@ def find_correct_index(cond_trials,correct_trials):
 
 
 
-
+import numpy as np
+import copy
+from scipy.stats import binom
+import matplotlib.pyplot as plt
 
 def merge_clusters2(temp_info, nrm, seqs, bursts, plot_figure, min_ratio, z_thr):
     """
@@ -2071,7 +2070,7 @@ def apply_masks_test(sess_info, Masks, cond_numbers, cond_name, sessin_numbers, 
 
     # ~~~~~~ Apply Combined Masks to Session Data ~~~~~~
     # Use logical AND (&) to combine multiple masks for bursts and sequences.
-    #run_data = dict()
+    run_data = dict()
     run_data['ids_clust'] = np.asarray(sess_info['ids_clust'])[
         mask_sess_burst & mask_cond_burst & mask_odd_seqs & mask_correct_seqs & mask_phase_seqs & Masks['speed_seq']
     ]

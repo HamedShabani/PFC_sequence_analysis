@@ -431,6 +431,7 @@ def mean_rate2(all_rates_L, P_x_f, num_neurons):
     >>> r0, = mean_rate2(all_rates_L, P_x_f, num_neurons)
     >>> print("Weighted mean firing rates:", r0)
     """
+    import numpy as np
 
     r0_f = np.zeros(num_neurons)
 

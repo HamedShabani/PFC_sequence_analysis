@@ -28,11 +28,6 @@ import numpy as np
 import copy
 from scipy.stats import binom
 import matplotlib.pyplot as plt
-
-
-import numpy as np
-from scipy.signal import find_peaks
-
 Tspare=.5
 
 
@@ -192,6 +187,7 @@ def extract_seq(times):
 
 
 #     return rep_index, nsig, pval, bmat, zmat, corrmat
+import numpy as np
 
 def rankseq(s1, s2):
     """

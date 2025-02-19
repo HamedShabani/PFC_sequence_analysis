@@ -192,6 +192,7 @@ def extract_seq(times):
 
 
 #     return rep_index, nsig, pval, bmat, zmat, corrmat
+import numpy as np
 
 def rankseq(s1, s2):
     """
