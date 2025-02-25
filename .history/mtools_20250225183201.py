@@ -2793,17 +2793,17 @@ def process_sessions(task, dates, folders, datafolder, signal_type, use_uniquein
     session_names = [item[0] for item in correctrate]
     correct_values = [item[1] for item in correctrate]
 
-    # Plot the correct trial rate.
-    plt.figure()
-    plt.bar(session_names, correct_values)
-    plt.xticks(rotation=90)
-    # Note: 'fol' here is from the innermost loop; adjust if needed.
-    plt.title(f"{fol} correct trial rate")
-    plt.hlines(0.7, -1, len(session_names) + 1, colors='k', linestyles='dashed')
-    plt.hlines(0.5, -1, len(session_names) + 1, colors='r', linestyles='dashed')
-    plt.xlim([-1, len(session_names)])
-    plt.tight_layout()
-    plt.show()
+    # # Plot the correct trial rate.
+    # plt.figure()
+    # plt.bar(session_names, correct_values)
+    # plt.xticks(rotation=90)
+    # # Note: 'fol' here is from the innermost loop; adjust if needed.
+    # plt.title(f"{fol} correct trial rate")
+    # plt.hlines(0.7, -1, len(session_names) + 1, colors='k', linestyles='dashed')
+    # plt.hlines(0.5, -1, len(session_names) + 1, colors='r', linestyles='dashed')
+    # plt.xlim([-1, len(session_names)])
+    # plt.tight_layout()
+    # plt.show()
 
 
 

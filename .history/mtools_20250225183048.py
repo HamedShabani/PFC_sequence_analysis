@@ -2752,43 +2752,7 @@ def process_sessions(task, dates, folders, datafolder, signal_type, use_uniquein
 
                         # Save cell index data from metadata.
                         true_cell_idx.append(data['metadata']['CellRegCellID'])
-    # # Plot the correct trial rate with updated appearance.
-    # # The x-axis now shows "Day 1", "Day 2", ... and bars are colored by session type.
-    # x = np.arange(len(correctrate))
-    # learning_x = []
-    # learned_x = []
-    # learning_values = []
-    # learned_values = []
-    # for i, (fname, rate, sess_type) in enumerate(correctrate):
-    #     if sess_type == 'Learning':
-    #         learning_x.append(i)
-    #         learning_values.append(rate)
-    #     elif sess_type == 'Learned':
-    #         learned_x.append(i)
-    #         learned_values.append(rate)
 
-    # plt.figure(figsize=[4,3])
-    # bar_width = 0.8
-    # # Updated colors:
-    # # For Learning sessions, use a slightly darker light gray ("silver").
-    # # For Learned sessions, continue using "slategray".
-    # if learning_x:
-    #     plt.bar(learning_x, learning_values, bar_width, color='silver', edgecolor='black', label='Learning')
-    # if learned_x:
-    #     plt.bar(learned_x, learned_values, bar_width, color='slategray', edgecolor='black', label='Learned')
-    
-    # # Set x-axis ticks to "Day 1", "Day 2", etc.
-    # plt.xticks(x, [f"Day {i+1}" for i in x], rotation=90)
-    # plt.xlabel("Session")
-    # plt.ylabel("Correct Trial Rate")
-    # plt.title(f"{fol}")
-    # plt.hlines(0.7, -1, len(correctrate), colors='k', linestyles='dashed')
-    # plt.hlines(0.5, -1, len(correctrate), colors='r', linestyles='dashed')
-    # plt.xlim([-1, len(correctrate)])
-    # plt.legend()
-    # plt.tight_layout()
-    # plt.savefig(savefolder+'Correct_rate'+fol+'.svg')
-    # plt.show()
     # Extract session names and correct rates for plotting.
     session_names = [item[0] for item in correctrate]
     correct_values = [item[1] for item in correctrate]
@@ -2806,6 +2770,28 @@ def process_sessions(task, dates, folders, datafolder, signal_type, use_uniquein
     plt.show()
 
 
+    plt.figure(figsize=[4,3])
+    bar_width = 0.8
+    # Updated colors:
+    # For Learning sessions, use a slightly darker light gray ("silver").
+    # For Learned sessions, continue using "slategray".
+    if learning_x:
+        plt.bar(learning_x, learning_values, bar_width, color='silver', edgecolor='black', label='Learning')
+    if learned_x:
+        plt.bar(learned_x, learned_values, bar_width, color='slategray', edgecolor='black', label='Learned')
+    
+    # Set x-axis ticks to "Day 1", "Day 2", etc.
+    plt.xticks(x, [f"Day {i+1}" for i in x], rotation=90)
+    plt.xlabel("Session")
+    plt.ylabel("Correct Trial Rate")
+    plt.title(f"{fol}")
+    plt.hlines(0.7, -1, len(correctrate), colors='k', linestyles='dashed')
+    plt.hlines(0.5, -1, len(correctrate), colors='r', linestyles='dashed')
+    plt.xlim([-1, len(correctrate)])
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(savefolder+'Correct_rate'+fol+'.svg')
+    plt.show()
 
 
 
