@@ -1776,6 +1776,85 @@ def apply_masks_test(sess_info, Masks, cond_numbers, cond_name, sessin_numbers, 
 
 
 
+
+
+# def pc_faction_in_sequnce(Masks,sess_info,sig_pc_idx_ph,cond_names):
+#     '''This function finds the precentage of the cells in a sequence that are place cells.
+
+# ''' 
+#     PC_frac_in_seq={}
+#     tasks=['sampling','outward','reward','inward']
+
+#     cnt=-1
+#     for phs in range(2):# learned 
+#         PC_frac_in_seq_corr={}
+        
+#         for correct in range(2):# correct trials
+
+
+#             #fig, ax = plt.subplots(3, 1, figsize=(7, 10))
+
+#             cnt=cnt+1
+#             if phs==1:
+#                 mode='learned'
+#             else:
+#                 mode='learning'
+
+#             if correct==1:
+#                 typoftrial='correct_trials'
+#             else:
+#                 typoftrial='failed_trials'
+
+#             sig_pc_idx=sig_pc_idx_ph[mode]# the indices of the si/pc/tc cells from learning or learned
+
+#             ph_mask=np.asarray(Masks['bursts_phase'])==phs
+#             correct_mask=np.asarray(Masks['correct_failed_seqs'])==correct
+
+
+#             cond_seqs={}
+#             pc_ratio={}
+#             seq_len={}
+#             pc_ratio2={}
+
+
+
+#             for itsk, tsk in enumerate(tasks):
+#                 mskcnd=np.zeros_like(Masks['bursts_cond']).astype(bool)
+#                 #mskcnd=np.zeros_like(Masks['bursts_cond'],type=bool)
+#                 for icond, condname_r in enumerate(cond_names):
+#                     if tsk in condname_r:
+#                         #print(cond_names[condname_r])
+#                         mskcnd+=(np.asarray(Masks['bursts_cond'])==cond_names[condname_r])
+#                 cond_seqs[tsk]=np.asarray(sess_info['seqs'])[mskcnd & correct_mask & ph_mask] 
+
+
+#             #selected_seqs = np.asarray(sess_info['seqs'])[(np.asarray(Masks['bursts_cond'])==8)|(np.asarray(Masks['bursts_cond'])==9)|(np.asarray(Masks['bursts_cond'])==10)|(np.asarray(Masks['bursts_cond'])==11)]
+
+
+#                 title=tsk
+#                 pc_seq_lengh=np.zeros(len(cond_seqs[tsk]))# precentage of place cells that are contibuted in a sequence
+
+#                 pc_seq_ratio=np.zeros(len(cond_seqs[tsk]))# precentage of place cells that are contibuted in a sequence
+#                 seq_pc_ratio=np.zeros(len(cond_seqs[tsk]))# precentage of sequences that are place cells 
+#                 if len(cond_seqs[tsk])>0:
+#                     len_seq_max=np.max([len(x) for x in cond_seqs[tsk]])
+#                 for iseq,seq in enumerate(cond_seqs[tsk]):
+#                     pc_seq_ratio[iseq]=(np.sum(np.isin(seq,sig_pc_idx))/len(sig_pc_idx[0]))# how many precent of the place cells conributed in this sequence
+#                     seq_pc_ratio[iseq]=(np.sum(np.isin(seq,sig_pc_idx))/len(seq))# how many precents of the cells in this sequence are place cells
+#                     pc_seq_lengh[iseq]=(len(seq))
+
+#                 pc_ratio[tsk]=seq_pc_ratio
+#                 seq_len[tsk]=pc_seq_lengh
+#                 pc_ratio2[tsk]=pc_seq_ratio
+
+
+#                 # PC_frac_in_seq[tsk]=pc_seq_lengh
+#                 # PC_frac_in_seq[tsk]=pc_seq_ratio
+#             PC_frac_in_seq_corr[typoftrial]= pc_ratio  
+        
+#         PC_frac_in_seq[mode]=PC_frac_in_seq_corr
+#     return PC_frac_in_seq
+
 def pc_faction_in_sequnce(Masks, sess_info, sig_pc_idx_ph, cond_names):
     """
     Compute the fraction of place cells present in sequences for each task, phase, and trial type.

@@ -680,6 +680,41 @@ def graph(seqAll,nrm,temp_info=[],temp_infoD=[]):
 
 
 
+
+# def cluster(bmat,zmat,params):
+#     cmat=np.zeros_like(zmat)
+#     cmat[~np.isnan(zmat)]=bmat[~np.isnan(zmat)]
+
+#     if params['name']=='AHC':
+#         fac=params['fac']
+#         clnmbr=params['clnbr']
+#         pdist=scich.distance.pdist(cmat)
+#         lkg=scich.linkage(pdist, method='ward')
+#         c_th=np.max(pdist)*fac
+#         ids_clust = scich.fcluster(lkg,c_th,criterion='distance')-1
+#         #ids_clust = scich.fcluster(lkg,clnmbr,criterion='maxclust')-1
+
+
+#     #gmm = mixture.GaussianMixture( n_components=2, covariance_type="full" ).fit(cmat)
+#     #ids_clust = gmm.predict(cmat)
+
+#     ## estimate bandwidth for mean shift
+#     #bandwidth = cluster2.estimate_bandwidth(cmat, quantile=.5)
+#     #ms = cluster2.MeanShift(bandwidth=bandwidth, bin_seeding=True).fit(cmat)
+#     #ids_clust = ms.labels_
+
+#     #optics = OPTICS(    max_eps=.3).fit(cmat) 
+#     #ids_clust=optics.labels_
+#     elif params['name']=='DB':
+
+#         DBSCAN_cluster = DBSCAN(eps=params['eps'], min_samples=params['min_samples']).fit(cmat) 
+#         ids_clust= DBSCAN_cluster.labels_
+
+#     #two_means = cluster2.MiniBatchKMeans(n_clusters = 2).fit(cmat)
+#     #ids_clust= two_means.labels_
+
+#     return ids_clust
+
 from scipy.cluster import hierarchy as sch
 from scipy.spatial.distance import pdist
 from sklearn.cluster import DBSCAN
@@ -1775,6 +1810,85 @@ def apply_masks_test(sess_info, Masks, cond_numbers, cond_name, sessin_numbers, 
     return run_data
 
 
+
+
+
+# def pc_faction_in_sequnce(Masks,sess_info,sig_pc_idx_ph,cond_names):
+#     '''This function finds the precentage of the cells in a sequence that are place cells.
+
+# ''' 
+#     PC_frac_in_seq={}
+#     tasks=['sampling','outward','reward','inward']
+
+#     cnt=-1
+#     for phs in range(2):# learned 
+#         PC_frac_in_seq_corr={}
+        
+#         for correct in range(2):# correct trials
+
+
+#             #fig, ax = plt.subplots(3, 1, figsize=(7, 10))
+
+#             cnt=cnt+1
+#             if phs==1:
+#                 mode='learned'
+#             else:
+#                 mode='learning'
+
+#             if correct==1:
+#                 typoftrial='correct_trials'
+#             else:
+#                 typoftrial='failed_trials'
+
+#             sig_pc_idx=sig_pc_idx_ph[mode]# the indices of the si/pc/tc cells from learning or learned
+
+#             ph_mask=np.asarray(Masks['bursts_phase'])==phs
+#             correct_mask=np.asarray(Masks['correct_failed_seqs'])==correct
+
+
+#             cond_seqs={}
+#             pc_ratio={}
+#             seq_len={}
+#             pc_ratio2={}
+
+
+
+#             for itsk, tsk in enumerate(tasks):
+#                 mskcnd=np.zeros_like(Masks['bursts_cond']).astype(bool)
+#                 #mskcnd=np.zeros_like(Masks['bursts_cond'],type=bool)
+#                 for icond, condname_r in enumerate(cond_names):
+#                     if tsk in condname_r:
+#                         #print(cond_names[condname_r])
+#                         mskcnd+=(np.asarray(Masks['bursts_cond'])==cond_names[condname_r])
+#                 cond_seqs[tsk]=np.asarray(sess_info['seqs'])[mskcnd & correct_mask & ph_mask] 
+
+
+#             #selected_seqs = np.asarray(sess_info['seqs'])[(np.asarray(Masks['bursts_cond'])==8)|(np.asarray(Masks['bursts_cond'])==9)|(np.asarray(Masks['bursts_cond'])==10)|(np.asarray(Masks['bursts_cond'])==11)]
+
+
+#                 title=tsk
+#                 pc_seq_lengh=np.zeros(len(cond_seqs[tsk]))# precentage of place cells that are contibuted in a sequence
+
+#                 pc_seq_ratio=np.zeros(len(cond_seqs[tsk]))# precentage of place cells that are contibuted in a sequence
+#                 seq_pc_ratio=np.zeros(len(cond_seqs[tsk]))# precentage of sequences that are place cells 
+#                 if len(cond_seqs[tsk])>0:
+#                     len_seq_max=np.max([len(x) for x in cond_seqs[tsk]])
+#                 for iseq,seq in enumerate(cond_seqs[tsk]):
+#                     pc_seq_ratio[iseq]=(np.sum(np.isin(seq,sig_pc_idx))/len(sig_pc_idx[0]))# how many precent of the place cells conributed in this sequence
+#                     seq_pc_ratio[iseq]=(np.sum(np.isin(seq,sig_pc_idx))/len(seq))# how many precents of the cells in this sequence are place cells
+#                     pc_seq_lengh[iseq]=(len(seq))
+
+#                 pc_ratio[tsk]=seq_pc_ratio
+#                 seq_len[tsk]=pc_seq_lengh
+#                 pc_ratio2[tsk]=pc_seq_ratio
+
+
+#                 # PC_frac_in_seq[tsk]=pc_seq_lengh
+#                 # PC_frac_in_seq[tsk]=pc_seq_ratio
+#             PC_frac_in_seq_corr[typoftrial]= pc_ratio  
+        
+#         PC_frac_in_seq[mode]=PC_frac_in_seq_corr
+#     return PC_frac_in_seq
 
 def pc_faction_in_sequnce(Masks, sess_info, sig_pc_idx_ph, cond_names):
     """

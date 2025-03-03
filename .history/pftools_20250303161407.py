@@ -1978,6 +1978,53 @@ def plot_kl_distributions_ss2(js_divergence_ss, p_value_corr_js_, name, type='Co
 ########################Cell_vis functions ##########################################
 
 
+
+
+
+# def shuffling_rates2(cluster_pc_fractions_L,cluster_pc_fractions_R,sig_sort_idx_l):
+#     # Sort rate maps of left runs and shuffle right runs
+
+
+#     # left_runs=rate_L_R[animal_name+'_L']['rate_all'][rate_L_R[animal_name+'_L']['significant']]# Left as reference
+#     # right_runs=rate_L_R[animal_name+'_R']['rate_all'][rate_L_R[animal_name+'_L']['significant']]# Left as reference
+
+#     left_runs=cluster_pc_fractions_L['rate_all']#[cluster_pc_fractions_L['significant']]# dir as reference
+#     right_runs=cluster_pc_fractions_R['rate_all']#[cluster_pc_fractions_L['significant']]# dir as reference
+#     #sig_sort_idx_l=np.argsort(np.argmax(left_runs,axis=1))
+#     #sig_sort_idx_r=np.argsort(np.argmax(right_runs,axis=1))
+
+
+#     correlation_l_r,correlation_l_r_stem,similarity_between_l_and_r_all,mask_cut= compute_corrleation(left_runs[sig_sort_idx_l],right_runs[sig_sort_idx_l])
+
+
+
+
+
+
+#     similarity_shuffled_cells=[]# compute the similarity for shuffled data
+#     for itr in range(len(cluster_pc_fractions_L['rate_all_shuffled'])):
+        
+#         sorted_r_sh=np.asarray(cluster_pc_fractions_R['rate_all_shuffled'][itr][sig_sort_idx_l])
+#         correlation_l_r,correlation_l_r_stem,similarity_between_l_and_r_all_sh,mask_cut= compute_corrleation(left_runs[sig_sort_idx_l],sorted_r_sh)
+
+
+
+
+#         similarity_shuffled_cells.append(similarity_between_l_and_r_all_sh)
+
+#     binary_mat=(np.asarray(similarity_shuffled_cells)<similarity_between_l_and_r_all)# compare similarity of original data with shuffled data
+
+#     reshaped_data = []
+#     num_shuffles=len(binary_mat)
+#     p_val_cells=np.zeros(len(binary_mat[0]))
+#     # Loop over each cell
+#     for cell in range(len(binary_mat[0])):
+#         # Extract the data for the current cell across all trials
+#         cell_data = [binary_mat[trial][cell] for trial in range(num_shuffles)]
+#         p_val_cells[cell]= 1-np.sum(cell_data)/num_shuffles# p-values of cells with significant similarity between left and right runs
+#         reshaped_data.append(cell_data)
+
+#     return p_val_cells,mask_cut
 def shuffling_rates2(cluster_pc_fractions_L, cluster_pc_fractions_R, sig_sort_idx_l):
     """
     Compute p-values for cell rate map similarity by comparing actual correlations with those computed on shuffled data.
@@ -2062,6 +2109,24 @@ def shuffling_rates2(cluster_pc_fractions_L, cluster_pc_fractions_R, sig_sort_id
 
 
 
+# # Function to compute the ratio of significant cells (True) to all cells
+# def compute_significant_ratios(data, condition):
+#     ratios = {}
+#     for animal, animal_data in data[condition].items():
+#         cond1=condition
+#         cond_mask=data[cond1][animal]['TC_arm'] | data[cond1][animal]['TC_stem'] | data[cond1][animal]['PC_arm'] | data[cond1][animal]['PC_stem']
+
+#         # si_learning=data[cond1][animal]['TC_arm'] | cell_type_mask_phases[cond1][animal]['TC_stem'] | cell_type_mask_phases[cond1][animal]['PC_arm'] | cell_type_mask_phases[cond1][animal]['PC_stem']
+#         # si_learned=data[cond2][animal]['TC_arm'] | cell_type_mask_phases[cond2][animal]['TC_stem'] | cell_type_mask_phases[cond2][animal]['PC_arm'] | cell_type_mask_phases[cond2][animal]['PC_stem']
+
+#         # si_sum=np.sum(si_learning | si_learned)
+#         ratios[animal] = {}
+#         for region, array in animal_data.items():
+#             total_cells = np.sum(cond_mask)#len(array)# Devide by Si cells of both learning and learned instead of all cells
+#             significant_cells = np.sum(array)
+#             ratio = significant_cells / total_cells if total_cells > 0 else 0
+#             ratios[animal][region] = ratio
+#     return ratios
 def compute_significant_ratios(data, condition):
     """
     Compute the ratio of significant cells for each animal and region under a given condition.

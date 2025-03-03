@@ -2062,6 +2062,24 @@ def shuffling_rates2(cluster_pc_fractions_L, cluster_pc_fractions_R, sig_sort_id
 
 
 
+# # Function to compute the ratio of significant cells (True) to all cells
+# def compute_significant_ratios(data, condition):
+#     ratios = {}
+#     for animal, animal_data in data[condition].items():
+#         cond1=condition
+#         cond_mask=data[cond1][animal]['TC_arm'] | data[cond1][animal]['TC_stem'] | data[cond1][animal]['PC_arm'] | data[cond1][animal]['PC_stem']
+
+#         # si_learning=data[cond1][animal]['TC_arm'] | cell_type_mask_phases[cond1][animal]['TC_stem'] | cell_type_mask_phases[cond1][animal]['PC_arm'] | cell_type_mask_phases[cond1][animal]['PC_stem']
+#         # si_learned=data[cond2][animal]['TC_arm'] | cell_type_mask_phases[cond2][animal]['TC_stem'] | cell_type_mask_phases[cond2][animal]['PC_arm'] | cell_type_mask_phases[cond2][animal]['PC_stem']
+
+#         # si_sum=np.sum(si_learning | si_learned)
+#         ratios[animal] = {}
+#         for region, array in animal_data.items():
+#             total_cells = np.sum(cond_mask)#len(array)# Devide by Si cells of both learning and learned instead of all cells
+#             significant_cells = np.sum(array)
+#             ratio = significant_cells / total_cells if total_cells > 0 else 0
+#             ratios[animal][region] = ratio
+#     return ratios
 def compute_significant_ratios(data, condition):
     """
     Compute the ratio of significant cells for each animal and region under a given condition.
