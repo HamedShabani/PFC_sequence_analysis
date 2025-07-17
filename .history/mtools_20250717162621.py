@@ -1677,8 +1677,8 @@ def apply_masks_test(sess_info, Masks, cond_numbers, cond_name, sessin_numbers, 
 
         cond_name_ = list(cond_name.keys())[cond_nbr]
 
-        # cond_names_inv = {v: k for k, v in cond_name.items()}
-        # cond_name_ = cond_names_inv.get(cond_nbr)
+        cond_names_inv = {v: k for k, v in cond_name.items()}
+        cond_name_ = cond_names_inv.get(cond_nbr)
 
 
         cond_names += ' and ' + cond_name_
