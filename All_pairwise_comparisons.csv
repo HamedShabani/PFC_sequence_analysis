@@ -1,0 +1,4 @@
+,stat,p_value,n_group1,n_group2,adjusted_p_value
+correct vs failed,3461962.5,0.0014239022075193764,4758,1536,0.004271706622558129
+correct_and_failed vs sleep,10614095.0,0.0,6294,2195,0.0
+correct_and_failed vs arena,1876105.5,1.7909625734409227e-37,6294,440,5.3728877203227685e-37

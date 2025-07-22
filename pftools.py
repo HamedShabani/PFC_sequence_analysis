@@ -285,7 +285,7 @@ def computeSpatialInfo(r_x, P_x, r_0, epsilon = 1e-10):
     r_x[r_x<0]=0
     if r_0<0:
         r_0=0
-    I = np.sum(P_x * r_x * np.log2((r_x + epsilon)/(r_0 + epsilon)))
+    I = np.nansum(P_x * r_x * np.log2((r_x + epsilon)/(r_0 + epsilon)))
     # ================================= Exercise ends here ========================================
     return I
 
